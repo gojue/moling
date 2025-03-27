@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"os"
+	"os/user"
 	"path/filepath"
 )
 
@@ -60,9 +61,8 @@ var (
 	GitVersion = "linux-arm64-202503222008-v0.0.1"
 	mlConfig   = &services.MoLingConfig{
 		Version:  GitVersion,
-		BasePath: filepath.Join(os.TempDir(), ".moling"), //"/Users/cfc4n/.moling",
+		BasePath: filepath.Join(os.TempDir(), ".moling"), // will set in mlsCommandPreFunc
 	}
-	listenAddr string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -74,20 +74,8 @@ var rootCmd = &cobra.Command{
 	Long: CliDescriptionLong,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	RunE: mlsCommandFunc,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		err := services.CheckDirectory(mlConfig.BasePath)
-		if err != nil {
-			return err
-		}
-		for _, dirName := range []string{"logs", "config", "browser"} {
-			err = services.CheckDirectory(filepath.Join(mlConfig.BasePath, dirName))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	},
+	RunE:              mlsCommandFunc,
+	PersistentPreRunE: mlsCommandPreFunc,
 }
 
 func usageFunc(c *cobra.Command) error {
@@ -110,13 +98,18 @@ func Execute() {
 }
 
 func init() {
+	// set default config file path
+	currentUser, err := user.Current()
+	if err == nil {
+		mlConfig.BasePath = filepath.Join(currentUser.HomeDir, ".moling")
+	}
+
 	cobra.EnablePrefixMatching = true
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.PersistentFlags().StringVarP(&mlConfig.ConfigFile, "config_file", "c", "", "MoLing Config File Path")
-	//rootCmd.PersistentFlags().StringVar(&mlConfig.BasePath, "root-path", "", "MoLing Data Path")
-	//rootCmd.PersistentFlags().StringSliceVar(&mlConfig.AllowDir, "allow-dir", []string{"/tmp"}, "allow dir")
-	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "", "listen address,aka SSE mode. if not set, use STDIO mode")
+	//rootCmd.PersistentFlags().StringVarP(&mlConfig.ConfigFile, "config_file", "c", "config.json", "MoLing Config File Path")
+	rootCmd.PersistentFlags().StringVar(&mlConfig.BasePath, "base_path", mlConfig.BasePath, "MoLing Base Data Path, automatically set by the system, cannot be changed, display only.")
+	//rootCmd.PersistentFlags().StringVarP(&mlConfig.ListenAddr, "listen", "l", "", "listen address,aka SSE mode. if not set, use STDIO mode")
 	rootCmd.SilenceUsage = true
 }
 
@@ -158,7 +151,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	}
 
 	// MCPServer
-	srv, err := NewMoLingServer(ctx, srvs, listenAddr)
+	srv, err := NewMoLingServer(ctx, srvs)
 	if err != nil {
 		return err
 	}

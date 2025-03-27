@@ -52,12 +52,8 @@ clean:
 	$(CMD_RM) -f $(OUT_BIN)*
 
 .PHONY: build
-build:
+build:clean
 	$(call gobuild,$(TARGET_OS),$(TARGET_ARCH))
-
-.PHONY: dev
-dev: clean
-	$(call gobuild,$(OS_NAME),$(OS_ARCH))
 
 # Format the code
 .PHONY: format

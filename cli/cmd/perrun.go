@@ -16,9 +16,22 @@
 
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"path/filepath"
+)
 
-func MoLingPreRunE(cmd *cobra.Command, args []string) error {
-	// TODO 检查 root path、创建目录等
+// mlsCommandPreFunc is a pre-run function for the MoLing command.
+func mlsCommandPreFunc(cmd *cobra.Command, args []string) error {
+	err := CreateDirectory(mlConfig.BasePath)
+	if err != nil {
+		return err
+	}
+	for _, dirName := range []string{"logs", "config", "browser"} {
+		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

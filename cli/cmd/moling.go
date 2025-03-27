@@ -27,7 +27,7 @@ type MoLingServer struct {
 	listenAddr string // SSE mode listen address, if empty, use STDIO mode.
 }
 
-func NewMoLingServer(ctx context.Context, services []services.Service, addr string) (*MoLingServer, error) {
+func NewMoLingServer(ctx context.Context, services []services.Service) (*MoLingServer, error) {
 	mcpServer := server.NewMCPServer(
 		MCPServerName,
 		GitVersion,
@@ -35,11 +35,12 @@ func NewMoLingServer(ctx context.Context, services []services.Service, addr stri
 		server.WithLogging(),
 		server.WithPromptCapabilities(true),
 	)
+	// Set the context for the server
 	ms := &MoLingServer{
 		ctx:        ctx,
 		server:     mcpServer,
 		services:   services,
-		listenAddr: addr,
+		listenAddr: mlConfig.ListenAddr,
 	}
 	err := ms.init()
 	return ms, err

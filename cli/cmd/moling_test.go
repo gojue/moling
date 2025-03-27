@@ -22,12 +22,12 @@ import (
 )
 
 func TestNewMLServer(t *testing.T) {
-	err := services.CheckDirectory(mlConfig.BasePath)
+	err := CreateDirectory(mlConfig.BasePath)
 	if err != nil {
 		t.Errorf("Failed to create base directory: %v", err)
 	}
 	for _, dirName := range []string{"logs", "config", "browser"} {
-		err = services.CheckDirectory(filepath.Join(mlConfig.BasePath, dirName))
+		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
 		if err != nil {
 			t.Errorf("Failed to create directory %s: %v", dirName, err)
 		}
@@ -45,7 +45,7 @@ func TestNewMLServer(t *testing.T) {
 	srvs := []services.Service{
 		fs,
 	}
-	srv, err := NewMoLingServer(ctx, srvs, "")
+	srv, err := NewMoLingServer(ctx, srvs)
 	if err != nil {
 		t.Errorf("Failed to create server: %v", err)
 	}
