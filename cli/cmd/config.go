@@ -22,7 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gojue/moling/services"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 var configCmd = &cobra.Command{
@@ -33,15 +37,21 @@ var configCmd = &cobra.Command{
 	RunE: ConfigCommandFunc,
 }
 
-var save bool
+var (
+	force   bool
+	initial bool
+)
 
 // ConfigCommandFunc executes the "config" command.
 func ConfigCommandFunc(command *cobra.Command, args []string) error {
-	loger := initLogger(mlConfig.BasePath)
-	mlConfig.SetLogger(loger)
-	loger.Info().Msg("Start to show config")
+	logger := initLogger(mlConfig.BasePath)
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	multi := zerolog.MultiLevelWriter(consoleWriter, logger)
+	logger = zerolog.New(multi).With().Timestamp().Logger()
+	mlConfig.SetLogger(logger)
+	logger.Info().Msg("Start to show config")
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
-	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
+	ctx = context.WithValue(ctx, services.MoLingLoggerKey, logger)
 	bf := bytes.Buffer{}
 	bf.WriteString("\n{\n")
 
@@ -77,14 +87,14 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	formattedJson, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("Error marshaling JSON: %v\n", err)
-
 	}
-
-	loger.Info().Msgf("Config: \n%s", formattedJson)
+	logger.Info().Str("config", filepath.Join(mlConfig.BasePath, MLConfigName)).Msg("Current loaded configuration file path")
+	logger.Info().Msg("You can modify the configuration file to change the settings.")
+	logger.Info().Msgf("Configuration details: \n%s\n", formattedJson)
 	return nil
 }
 
 func init() {
-	configCmd.PersistentFlags().BoolVarP(&save, "save", "s", false, "Save configuration to file")
+	configCmd.PersistentFlags().BoolVar(&initial, "init", false, fmt.Sprintf("Save configuration to %s", filepath.Join(mlConfig.BasePath, MLConfigName)))
 	rootCmd.AddCommand(configCmd)
 }

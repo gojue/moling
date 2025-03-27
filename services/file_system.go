@@ -432,7 +432,7 @@ func (fss *FilesystemServer) handleReadFile(
 	//	}
 	//	path = cwd
 	//}
-	path = filepath.Join(fss.config.FSRootPath, path)
+	path = filepath.Join(fss.config.CachePath, path)
 	validPath, err := fss.validatePath(path)
 	if err != nil {
 		return &mcp.CallToolResult{
@@ -624,7 +624,7 @@ func (fss *FilesystemServer) handleWriteFile(
 		return nil, fmt.Errorf("content must be a string")
 	}
 
-	path = filepath.Join(fss.config.FSRootPath, path)
+	path = filepath.Join(fss.config.CachePath, path)
 
 	validPath, err := fss.validatePath(path)
 	if err != nil {

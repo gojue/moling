@@ -27,7 +27,7 @@ func mlsCommandPreFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	for _, dirName := range []string{"logs", "config", "browser"} {
+	for _, dirName := range mlDirectories {
 		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
 		if err != nil {
 			return err

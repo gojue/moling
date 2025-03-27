@@ -188,7 +188,7 @@ func (cs *CommandServer) Config() string {
 		cs.logger.Err(err).Msg("failed to marshal config")
 		return "{}"
 	}
-	cs.logger.Info().Str("config", string(cfg)).Msg("CommandServer config")
+	cs.logger.Debug().Str("config", string(cfg)).Msg("CommandServer config")
 	return string(cfg)
 }
 

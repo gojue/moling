@@ -31,7 +31,7 @@ var (
 // FileSystemConfig represents the configuration for the file system.
 type FileSystemConfig struct {
 	AllowedDirs []string `json:"allowed_dirs"` // AllowedDirs is a list of allowed directories.
-	FSRootPath  string   `json:"fs_root_path"` // FSRootPath is the root path for the file system.
+	CachePath   string   `json:"fs_root_path"` // CachePath is the root path for the file system.
 }
 
 // NewFileSystemConfig creates a new FileSystemConfig with the given allowed directories.
@@ -42,7 +42,7 @@ func NewFileSystemConfig(path []string) *FileSystemConfig {
 
 	return &FileSystemConfig{
 		AllowedDirs: path,
-		FSRootPath:  path[0],
+		CachePath:   path[0],
 	}
 }
 

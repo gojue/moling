@@ -57,11 +57,25 @@ Usage:
 `
 )
 
+const (
+	MLConfigName = "config.json" // config file name of MoLing Server
+)
+
 var (
 	GitVersion = "linux-arm64-202503222008-v0.0.1"
 	mlConfig   = &services.MoLingConfig{
-		Version:  GitVersion,
-		BasePath: filepath.Join(os.TempDir(), ".moling"), // will set in mlsCommandPreFunc
+		Version:    GitVersion,
+		ConfigFile: MLConfigName,
+		BasePath:   filepath.Join(os.TempDir(), ".moling"), // will set in mlsCommandPreFunc
+	}
+
+	// mlDirectories is a list of directories to be created in the base path
+	mlDirectories = []string{
+		"logs",
+		"config",
+		"browser",
+		"data",
+		"cache",
 	}
 )
 
@@ -107,9 +121,8 @@ func init() {
 	cobra.EnablePrefixMatching = true
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	//rootCmd.PersistentFlags().StringVarP(&mlConfig.ConfigFile, "config_file", "c", "config.json", "MoLing Config File Path")
 	rootCmd.PersistentFlags().StringVar(&mlConfig.BasePath, "base_path", mlConfig.BasePath, "MoLing Base Data Path, automatically set by the system, cannot be changed, display only.")
-	//rootCmd.PersistentFlags().StringVarP(&mlConfig.ListenAddr, "listen", "l", "", "listen address,aka SSE mode. if not set, use STDIO mode")
+	rootCmd.PersistentFlags().BoolVarP(&mlConfig.Debug, "debug", "d", false, "Debug mode, default is false.")
 	rootCmd.SilenceUsage = true
 }
 
@@ -121,7 +134,10 @@ func initLogger(mlDataPath string) zerolog.Logger {
 	//consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	//logger = zerolog.New(consoleWriter).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if mlConfig.Debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 	var f *os.File
 	f, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {

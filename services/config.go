@@ -31,6 +31,7 @@ type MoLingConfig struct {
 	//AllowDir   []string `json:"allow_dir"`   // The directories that are allowed to be accessed by the server.
 	Version    string `json:"version"`     // The version of the MoLing server.
 	ListenAddr string `json:"listen_addr"` // The address to listen on for SSE mode.
+	Debug      bool   `json:"debug"`       // Debug mode, if true, the server will run in debug mode.
 	logger     zerolog.Logger
 }
 
