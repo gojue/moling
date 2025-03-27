@@ -35,8 +35,20 @@ MoLing是一个computer-use的MCP Server，基于操作系统API实现了系统�
 - Cherry Studio
 
 #### 配置格式
-```json
+以Claude客户端为例，在配置文件中添加如下配置：
 
+> [!TIP]
+> 仅需添加3-6行的配置。
+
+```json
+{
+  "mcpServers": {
+    "MoLing": {
+      "command": "/usr/local/bin/moling",
+      "args": []
+    }
+  }
+}
 ```
 ### 运行模式
 

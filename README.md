@@ -34,6 +34,23 @@ MoLing is a computer-based MCP Server that implements system interaction through
 - Cline
 - Cherry Studio
 
+#### Configuration Format
+For example, to configure the Claude client, add the following configuration:
+
+> [!TIP]
+> Only 3-6 lines of configuration are needed.
+
+```json
+{
+  "mcpServers": {
+    "MoLing": {
+      "command": "/usr/local/bin/moling",
+      "args": []
+    }
+  }
+}
+```
+
 ### Operation Modes
 
 - **Stdio Mode**: CLI-based interactive mode for user-friendly experience
