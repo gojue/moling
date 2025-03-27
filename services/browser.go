@@ -29,6 +29,10 @@ import (
 	"path/filepath"
 )
 
+const (
+	DataPath = "browser" // Path to store browser data
+)
+
 // BrowserServer represents the configuration for the browser service.
 type BrowserServer struct {
 	MLService
@@ -56,28 +60,26 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 	}
 	bs.logger = logger.Hook(loggerNameHook)
 	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
-	userDataDir := filepath.Join(globalConf.BasePath, "browser")
+	userDataDir := filepath.Join(globalConf.BasePath, DataPath)
 	err := bs.initBrowser(userDataDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize browser: %v", err)
 	}
-	opts := []chromedp.ExecAllocatorOption{
+	// Create a new context for the browser
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent(bc.UserAgent),
 		chromedp.Flag("lang", bc.DefaultLanguage),
-		//chromedp.Flag("headless", bc.Headless),
 		chromedp.CombinedOutput(logger),
 		chromedp.WindowSize(1312, 848),
-		chromedp.Flag("disable-gpu", true),
-		//chromedp.DisableGPU,
-		chromedp.Headless,
 		chromedp.UserDataDir(userDataDir),
-	}
-	//chromedp.NewBrowser(bs.ctx, url, chromedp.WithBrowserErrorf(bs.logger.Printf),
-	//	chromedp.WithDialTimeout(time.Second*time.Duration(bs.config.Timeout)))
-	bs.ctx, bs.cancel = chromedp.NewExecAllocator(ctx, opts...)
-	bs.ctx, bs.cancel = chromedp.NewContext(bs.ctx,
-		chromedp.WithErrorf(logger.Printf),
+		//chromedp.Headless,
+		//chromedp.NoFirstRun,
+		//chromedp.NoDefaultBrowserCheck,
+		//chromedp.IgnoreCertErrors,
 	)
+	bs.ctx, bs.cancel = chromedp.NewExecAllocator(ctx, opts...)
+
+	bs.ctx, bs.cancel = chromedp.NewContext(bs.ctx, chromedp.WithErrorf(logger.Printf))
 	err = bs.init()
 	if err != nil {
 		return nil, err
@@ -101,10 +103,10 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 			mcp.Description("CSS selector for element to screenshot"),
 		),
 		mcp.WithNumber("width",
-			mcp.Description("Width in pixels (default: 800)"),
+			mcp.Description("Width in pixels (default: 1700)"),
 		),
 		mcp.WithNumber("height",
-			mcp.Description("Height in pixels (default: 600)"),
+			mcp.Description("Height in pixels (default: 1100)"),
 		),
 	), bs.handleScreenshot)
 	bs.AddTool(mcp.NewTool(

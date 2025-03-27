@@ -88,13 +88,24 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("Error marshaling JSON: %v\n", err)
 	}
-	logger.Info().Str("config", filepath.Join(mlConfig.BasePath, MLConfigName)).Msg("Current loaded configuration file path")
+
+	// 判断是否存在配置文件
+	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
+	if _, err = os.Stat(configFilePath); os.IsNotExist(err) {
+		logger.Info().Msgf("Configuration file %s does not exist. Creating a new one.", configFilePath)
+		err = os.WriteFile(configFilePath, formattedJson, 0644)
+		if err != nil {
+			return fmt.Errorf("Error writing configuration file: %v\n", err)
+		}
+		logger.Info().Msgf("Configuration file %s created successfully.", configFilePath)
+	}
+	logger.Info().Str("config", configFilePath).Msg("Current loaded configuration file path")
 	logger.Info().Msg("You can modify the configuration file to change the settings.")
 	logger.Info().Msgf("Configuration details: \n%s\n", formattedJson)
 	return nil
 }
 
 func init() {
-	configCmd.PersistentFlags().BoolVar(&initial, "init", false, fmt.Sprintf("Save configuration to %s", filepath.Join(mlConfig.BasePath, MLConfigName)))
+	configCmd.PersistentFlags().BoolVar(&initial, "init", false, fmt.Sprintf("Save configuration to %s", filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)))
 	rootCmd.AddCommand(configCmd)
 }

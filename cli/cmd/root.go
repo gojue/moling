@@ -65,7 +65,7 @@ var (
 	GitVersion = "linux-arm64-202503222008-v0.0.1"
 	mlConfig   = &services.MoLingConfig{
 		Version:    GitVersion,
-		ConfigFile: MLConfigName,
+		ConfigFile: filepath.Join("config", MLConfigName),
 		BasePath:   filepath.Join(os.TempDir(), ".moling"), // will set in mlsCommandPreFunc
 	}
 
@@ -131,9 +131,6 @@ func initLogger(mlDataPath string) zerolog.Logger {
 	var logger zerolog.Logger
 	var err error
 	logFile := filepath.Join(mlDataPath, "logs", "moling.log")
-	//consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	//logger = zerolog.New(consoleWriter).With().Timestamp().Logger()
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if mlConfig.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

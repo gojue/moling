@@ -120,7 +120,7 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 
 	// Check if the command is allowed
 	if !cs.isAllowedCommand(command) {
-		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.globalConfig.BasePath, "config", "config.json"))
+		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.globalConfig.BasePath, "config", cs.globalConfig.ConfigFile))
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
 				mcp.TextContent{

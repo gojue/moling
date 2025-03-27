@@ -36,7 +36,7 @@ func initTestEnv() (zerolog.Logger, context.Context, error) {
 	}
 	logger = zerolog.New(f).With().Timestamp().Logger()
 	mlConfig := &MoLingConfig{
-		ConfigFile: "test_config.json",
+		ConfigFile: filepath.Join("config", "test_config.json"),
 		BasePath:   os.TempDir(),
 	}
 	ctx := context.WithValue(context.Background(), MoLingConfigKey, mlConfig)
