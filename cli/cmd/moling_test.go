@@ -26,7 +26,7 @@ func TestNewMLServer(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create base directory: %v", err)
 	}
-	for _, dirName := range []string{"logs", "config", "browser"} {
+	for _, dirName := range mlDirectories {
 		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
 		if err != nil {
 			t.Errorf("Failed to create directory %s: %v", dirName, err)

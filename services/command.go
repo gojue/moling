@@ -37,10 +37,9 @@ var (
 // CommandServer implements the Service interface and provides methods to execute named commands.
 type CommandServer struct {
 	MLService
-	config       *CommandConfig
-	globalConfig *MoLingConfig
-	osName       string
-	osVersion    string
+	config    *CommandConfig
+	osName    string
+	osVersion string
 }
 
 // NewCommandServer creates a new CommandServer with the given allowed commands.
@@ -63,11 +62,11 @@ func NewCommandServer(ctx context.Context, args []string) (Service, error) {
 
 	cs := &CommandServer{
 		MLService: MLService{
-			ctx:    ctx,
-			logger: lger.Hook(loggerNameHook),
+			ctx:      ctx,
+			logger:   lger.Hook(loggerNameHook),
+			mlConfig: gConf,
 		},
-		config:       cc,
-		globalConfig: gConf,
+		config: cc,
 	}
 
 	err = cs.init()
@@ -104,7 +103,7 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Role: mcp.RoleUser,
 				Content: mcp.TextContent{
 					Type: "text",
-					Text: fmt.Sprintf("You are a command-line tool assistant, using %s system commands to help users troubleshoot network issues, system performance, among other things.", cs.globalConfig.SystemInfo),
+					Text: fmt.Sprintf("You are a command-line tool assistant, using %s system commands to help users troubleshoot network issues, system performance, among other things.", cs.MlConfig().SystemInfo),
 				},
 			},
 		},
@@ -120,7 +119,7 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 
 	// Check if the command is allowed
 	if !cs.isAllowedCommand(command) {
-		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.globalConfig.BasePath, "config", cs.globalConfig.ConfigFile))
+		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.MlConfig().BasePath, "config", cs.MlConfig().ConfigFile))
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
 				mcp.TextContent{

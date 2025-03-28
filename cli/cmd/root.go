@@ -71,10 +71,10 @@ var (
 
 	// mlDirectories is a list of directories to be created in the base path
 	mlDirectories = []string{
-		"logs",
-		"config",
-		"browser",
-		"data",
+		"logs",    // log file
+		"config",  // config file
+		"browser", // browser cache
+		"data",    // data
 		"cache",
 	}
 )
