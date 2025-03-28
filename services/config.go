@@ -27,11 +27,14 @@ type Config interface {
 // MoLingConfig is a struct that holds the configuration for the MoLing server.
 type MoLingConfig struct {
 	ConfigFile string `json:"config_file"` // The path to the configuration file.
-	BasePath   string `json:"base_path"`   // The base path for the server, used for storing files. automatically created if not exists.
+	BasePath   string `json:"base_path"`   // The base path for the server, used for storing files. automatically created if not exists. eg: /Users/user1/.moling
 	//AllowDir   []string `json:"allow_dir"`   // The directories that are allowed to be accessed by the server.
 	Version    string `json:"version"`     // The version of the MoLing server.
 	ListenAddr string `json:"listen_addr"` // The address to listen on for SSE mode.
 	Debug      bool   `json:"debug"`       // Debug mode, if true, the server will run in debug mode.
+	Username   string // The username of the user running the server.
+	HomeDir    string // The home directory of the user running the server. macOS: /Users/user1, Linux: /home/user1
+	SystemInfo string // The system information of the user running the server. macOS: Darwin 15.3.3, Linux: Ubuntu 20.04.1 LTS
 	logger     zerolog.Logger
 }
 

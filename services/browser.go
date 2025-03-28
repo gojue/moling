@@ -46,6 +46,10 @@ type BrowserServer struct {
 func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 
 	bc := NewBrowserConfig()
+	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
+	userDataDir := filepath.Join(globalConf.BasePath, DataPath)
+
+	bc.DataPath = filepath.Join(globalConf.BasePath, "data")
 	logger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
 	if !ok {
 		return nil, fmt.Errorf("BrowserServer: invalid logger type: %T", ctx.Value(MoLingLoggerKey))
@@ -59,8 +63,7 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 		config: bc,
 	}
 	bs.logger = logger.Hook(loggerNameHook)
-	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
-	userDataDir := filepath.Join(globalConf.BasePath, DataPath)
+
 	err := bs.initBrowser(userDataDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize browser: %v", err)

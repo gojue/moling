@@ -23,8 +23,8 @@ import (
 	"os/exec"
 )
 
-// executeCommand executes a command and returns its output.
-func (cs *CommandServer) executeCommand(command string) (string, error) {
+// ExecCommand executes a command and returns its output.
+func ExecCommand(command string) (string, error) {
 	var cmd *exec.Cmd
 	cmd = exec.Command("cmd", "/C", command)
 	output, err := cmd.CombinedOutput()

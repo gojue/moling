@@ -104,7 +104,7 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Role: mcp.RoleUser,
 				Content: mcp.TextContent{
 					Type: "text",
-					Text: "This is a simple prompt without arguments.",
+					Text: fmt.Sprintf("You are a command-line tool assistant, using %s system commands to help users troubleshoot network issues, system performance, among other things.", cs.globalConfig.SystemInfo),
 				},
 			},
 		},
@@ -133,7 +133,7 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 	}
 
 	// Execute the command
-	output, err := cs.executeCommand(command)
+	output, err := ExecCommand(command)
 	if err != nil {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{

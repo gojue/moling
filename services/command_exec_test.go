@@ -29,16 +29,11 @@ type MockCommandServer struct {
 	CommandServer
 }
 
-// TestExecuteCommand tests the executeCommand function.
+// TestExecuteCommand tests the ExecCommand function.
 func TestExecuteCommand(t *testing.T) {
-	cs := &MockCommandServer{
-		CommandServer{
-			config: NewCommandConfig([]string{}),
-		},
-	}
 	execCmd := "echo 'Hello, World!'"
 	// Test a simple command
-	output, err := cs.executeCommand(execCmd)
+	output, err := ExecCommand(execCmd)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -52,7 +47,7 @@ func TestExecuteCommand(t *testing.T) {
 	defer cancel()
 
 	execCmd = "curl ifconfig.me|grep Time"
-	output, err = cs.executeCommand(execCmd)
+	output, err = ExecCommand(execCmd)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

@@ -19,6 +19,8 @@ package services
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 type BrowserConfig struct {
@@ -55,6 +57,6 @@ func NewBrowserConfig() *BrowserConfig {
 		CSSTimeout:      10,
 		UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 (GoJue MoLing)",
 		DefaultLanguage: "en-US",
-		DataPath:        "/Users/cfc4n/Downloads/moling_data",
+		DataPath:        filepath.Join(os.TempDir(), ".moling", "data"),
 	}
 }

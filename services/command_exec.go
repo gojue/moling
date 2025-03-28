@@ -25,10 +25,10 @@ import (
 	"time"
 )
 
-// executeCommand executes a command and returns its output.
-func (cs *CommandServer) executeCommand(command string) (string, error) {
+// ExecCommand executes a command and returns its output.
+func ExecCommand(command string) (string, error) {
 	var cmd *exec.Cmd
-	ctx, cfunc := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cfunc := context.WithTimeout(context.Background(), time.Second*10)
 	defer cfunc()
 	cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	output, err := cmd.CombinedOutput()

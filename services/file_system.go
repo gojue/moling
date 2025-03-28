@@ -56,7 +56,10 @@ type FilesystemServer struct {
 func NewFilesystemServer(ctx context.Context, args []string) (Service, error) {
 	// Validate the config
 	var err error
-	fc := NewFileSystemConfig(args)
+	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
+	userDataDir := filepath.Join(globalConf.BasePath, "data")
+
+	fc := NewFileSystemConfig([]string{userDataDir})
 
 	if err = fc.Check(); err != nil {
 		return nil, fmt.Errorf("FilesystemServer: invalid config: %v", err)

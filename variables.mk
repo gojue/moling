@@ -56,5 +56,5 @@ OS_NAME ?= $(shell uname -s|tr 'A-Z' 'a-z')
 OS_ARCH ?= $(shell uname -m)
 OS_VERSION_SHORT := $(shell uname -r | cut -d'-' -f 1)
 TARGET_OS ?= $(OS_NAME)
-TARGET_ARCH ?= $(OS_ARCH)
+TARGET_ARCH ?= $(if $(filter x86_64,$(OS_ARCH)),amd64,arm64)
 OUT_BIN := bin/moling

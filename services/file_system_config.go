@@ -25,7 +25,7 @@ import (
 var (
 	// TODO : read from config file
 	allowedDirsDefault = []string{
-		"/Users/cfc4n/Downloads/moling_data",
+		os.TempDir(),
 	}
 )
 
