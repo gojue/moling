@@ -303,7 +303,7 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 	if err != nil {
 		return bs.CallToolResultErr(fmt.Errorf("failed to hover over element: %v", err).Error()), nil
 	}
-	return bs.CallToolResultErr(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
+	return bs.CallToolResult(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
 }
 
 func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -316,7 +316,7 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 	if err != nil {
 		return bs.CallToolResultErr(fmt.Errorf("failed to execute script: %v", err).Error()), nil
 	}
-	return bs.CallToolResultErr(fmt.Sprintf("Script executed successfully: %v", result)), nil
+	return bs.CallToolResult(fmt.Sprintf("Script executed successfully: %v", result)), nil
 }
 
 func (bs *BrowserServer) Close() error {

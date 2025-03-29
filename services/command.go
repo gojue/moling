@@ -129,7 +129,7 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 		return cs.CallToolResultErr(fmt.Sprintf("Error executing command: %v", err)), nil
 	}
 
-	return cs.CallToolResultErr(output), nil
+	return cs.CallToolResult(output), nil
 }
 
 // isAllowedCommand checks if the command is allowed based on the configuration.
