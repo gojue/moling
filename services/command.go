@@ -114,45 +114,22 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	command, ok := request.Params.Arguments["command"].(string)
 	if !ok {
-		return nil, fmt.Errorf("command must be a string")
+		return cs.CallToolResultErr(fmt.Errorf("command must be a string").Error()), nil
 	}
 
 	// Check if the command is allowed
 	if !cs.isAllowedCommand(command) {
 		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.MlConfig().BasePath, "config", cs.MlConfig().ConfigFile))
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: Command '%s' is not allowed", command),
-				},
-			},
-			IsError: true,
-		}, nil
+		return cs.CallToolResultErr(fmt.Sprintf("Error: Command '%s' is not allowed", command)), nil
 	}
 
 	// Execute the command
 	output, err := ExecCommand(command)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error executing command: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return cs.CallToolResultErr(fmt.Sprintf("Error executing command: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: output,
-			},
-		},
-	}, nil
+	return cs.CallToolResultErr(output), nil
 }
 
 // isAllowedCommand checks if the command is allowed based on the configuration.

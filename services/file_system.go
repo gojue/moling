@@ -261,9 +261,7 @@ func (fss *FilesystemServer) getFileStats(path string) (FileInfo, error) {
 	}, nil
 }
 
-func (fss *FilesystemServer) searchFiles(
-	rootPath, pattern string,
-) ([]string, error) {
+func (fss *FilesystemServer) searchFiles(rootPath, pattern string) ([]string, error) {
 	var results []string
 	pattern = strings.ToLower(pattern)
 
@@ -409,58 +407,22 @@ func (fss *FilesystemServer) handleReadResource(ctx context.Context, request mcp
 
 // Tool handlers
 
-func (fss *FilesystemServer) handleReadFile(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleReadFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr("Path must be a string"), nil
 	}
 
-	//// Handle empty or relative paths like "." or "./" by converting to absolute path
-	//if path == "." || path == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	path = cwd
-	//}
 	path = filepath.Join(fss.config.CachePath, path)
 	validPath, err := fss.validatePath(path)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("validate Path Error: %v", err)), nil
 	}
 
 	// Check if it'fss a directory
 	info, err := os.Stat(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("check directory error: %v", err)), nil
 	}
 
 	if info.IsDir() {
@@ -512,28 +474,13 @@ func (fss *FilesystemServer) handleReadFile(
 	// Read file content
 	content, err := os.ReadFile(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error reading file: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error reading file: %v", err)), nil
 	}
 
 	// Handle based on content type
 	if isTextFile(mimeType) {
 		// It'fss a text file, return as text
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: string(content),
-				},
-			},
-		}, nil
+		return fss.CallToolResult(string(content)), nil
 	} else if isImageFile(mimeType) {
 		// It'fss an image file, return as image content
 		if info.Size() <= MaxBase64Size {
@@ -614,17 +561,14 @@ func (fss *FilesystemServer) handleReadFile(
 	}
 }
 
-func (fss *FilesystemServer) handleWriteFile(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr("Path must be a string"), nil
 	}
 	content, ok := request.Params.Arguments["content"].(string)
 	if !ok {
-		return nil, fmt.Errorf("content must be a string")
+		return fss.CallToolResultErr("Content must be a string"), nil
 	}
 
 	path = filepath.Join(fss.config.CachePath, path)
@@ -644,55 +588,24 @@ func (fss *FilesystemServer) handleWriteFile(
 
 	// Check if it'fss a directory
 	if info, err := os.Stat(validPath); err == nil && info.IsDir() {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: "Error: Cannot write to a directory",
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: Cannot write to a directory:%s", validPath)), nil
 	}
 
 	// Create parent directories if they don't exist
 	parentDir := filepath.Dir(validPath)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error creating parent directories: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error creating parent directories: %v", err)), nil
 	}
 
 	if err := os.WriteFile(validPath, []byte(content), 0644); err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error writing file: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error writing file: %v", err)), nil
 	}
 
 	// Get file info for the response
 	info, err := os.Stat(validPath)
 	if err != nil {
 		// File was written but we couldn't get info
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Successfully wrote to %s", path),
-				},
-			},
-		}, nil
+		return fss.CallToolResult(fmt.Sprintf("Successfully wrote to %s", path)), nil
 	}
 
 	resourceURI := pathToResourceURI(validPath)
@@ -714,83 +627,30 @@ func (fss *FilesystemServer) handleWriteFile(
 	}, nil
 }
 
-func (fss *FilesystemServer) handleListDirectory(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleListDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr("Path must be a string"), nil
 	}
-
-	//// Handle empty or relative paths like "." or "./" by converting to absolute path
-	//if path == "." || path == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	path = cwd
-	//}
 
 	validPath, err := fss.validatePath(path)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("validate path error: %v", err)), nil
 	}
 
 	// Check if it'fss a directory
 	info, err := os.Stat(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Check directory %s Error: %v", validPath, err)), nil
 	}
 
 	if !info.IsDir() {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: "Error: Path is not a directory",
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: Path is not a directory:%s", validPath)), nil
 	}
 
 	entries, err := os.ReadDir(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error reading directory: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error reading directory: %v", err)), nil
 	}
 
 	var result strings.Builder
@@ -833,43 +693,15 @@ func (fss *FilesystemServer) handleListDirectory(
 	}, nil
 }
 
-func (fss *FilesystemServer) handleCreateDirectory(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleCreateDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr("path must be a string"), nil
 	}
 
-	//// Handle empty or relative paths like "." or "./" by converting to absolute path
-	//if path == "." || path == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	path = cwd
-	//}
 	validPath, err := fss.validatePath(path)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: %v", err)), nil
 	}
 
 	// Check if path already exists
@@ -893,27 +725,11 @@ func (fss *FilesystemServer) handleCreateDirectory(
 				},
 			}, nil
 		}
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: Path exists but is not a directory: %s", path),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: Path exists but is not a directory: %s", path)), nil
 	}
 
 	if err := os.MkdirAll(validPath, 0755); err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error creating directory: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error creating directory: %v", err)), nil
 	}
 
 	resourceURI := pathToResourceURI(validPath)
@@ -935,117 +751,39 @@ func (fss *FilesystemServer) handleCreateDirectory(
 	}, nil
 }
 
-func (fss *FilesystemServer) handleMoveFile(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	source, ok := request.Params.Arguments["source"].(string)
 	if !ok {
-		return nil, fmt.Errorf("source must be a string")
+		return fss.CallToolResultErr("source must be a string"), nil
 	}
 	destination, ok := request.Params.Arguments["destination"].(string)
 	if !ok {
-		return nil, fmt.Errorf("destination must be a string")
+		return fss.CallToolResultErr("destination must be a string"), nil
 	}
 
-	//// Handle empty or relative paths for source
-	//if source == "." || source == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	source = cwd
-	//}
-	//
-	//// Handle empty or relative paths for destination
-	//if destination == "." || destination == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	destination = cwd
-	//}
 	validSource, err := fss.validatePath(source)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error with source path: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error with source path: %v", err)), nil
 	}
 
 	// Check if source exists
 	if _, err := os.Stat(validSource); os.IsNotExist(err) {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: Source does not exist: %s", source),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: Source does not exist: %s", source)), nil
 	}
 
 	validDest, err := fss.validatePath(destination)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error with destination path: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error with destination path: %v", err)), nil
 	}
 
 	// Create parent directory for destination if it doesn't exist
 	destDir := filepath.Dir(validDest)
 	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error creating destination directory: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error creating destination directory: %v", err)), nil
 	}
 
 	if err := os.Rename(validSource, validDest); err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error moving file: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error moving file: %v", err)), nil
 	}
 
 	resourceURI := pathToResourceURI(validDest)
@@ -1074,92 +812,35 @@ func (fss *FilesystemServer) handleMoveFile(
 func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr("path must be a string"), nil
 	}
 	pattern, ok := request.Params.Arguments["pattern"].(string)
 	if !ok {
-		return nil, fmt.Errorf("pattern must be a string")
+		return fss.CallToolResultErr("pattern must be a string"), nil
 	}
 
-	//// Handle empty or relative paths like "." or "./" by converting to absolute path
-	//if path == "." || path == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	path = cwd
-	//}
 	validPath, err := fss.validatePath(path)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: %v", err)), nil
 	}
 
 	// Check if it'fss a directory
 	info, err := os.Stat(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error: %v", err)), nil
 	}
 
 	if !info.IsDir() {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: "Error: Search path must be a directory",
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr("Error: Search path must be a directory"), nil
 	}
 
 	results, err := fss.searchFiles(validPath, pattern)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error searching files: %v",
-						err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error searching files: %v", err)), nil
 	}
 
 	if len(results) == 0 {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("No files found matching pattern '%s' in %s", pattern, path),
-				},
-			},
-		}, nil
+		return fss.CallToolResult(fmt.Sprintf("No files found matching pattern '%s' in %s", pattern, path)), nil
 	}
 
 	// Format results with resource URIs
@@ -1181,42 +862,14 @@ func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.
 		}
 	}
 
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: formattedResults.String(),
-			},
-		},
-	}, nil
+	return fss.CallToolResult(formattedResults.String()), nil
 }
 
-func (fss *FilesystemServer) handleGetFileInfo(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
-		return nil, fmt.Errorf("path must be a string")
+		return fss.CallToolResultErr(fmt.Errorf("path %v must be a string", request.Params.Arguments["path"]).Error()), nil
 	}
-
-	// Handle empty or relative paths like "." or "./" by converting to absolute path
-	//if path == "." || path == "./" {
-	//	// Get current working directory
-	//	cwd, err := os.Getwd()
-	//	if err != nil {
-	//		return &mcp.CallToolResult{
-	//			Content: []mcp.Content{
-	//				mcp.TextContent{
-	//					Type: "text",
-	//					Text: fmt.Sprintf("Error resolving current directory: %v", err),
-	//				},
-	//			},
-	//			IsError: true,
-	//		}, nil
-	//	}
-	//	path = cwd
-	//}
 
 	validPath, err := fss.validatePath(path)
 	if err != nil {
@@ -1233,15 +886,7 @@ func (fss *FilesystemServer) handleGetFileInfo(
 
 	info, err := fss.getFileStats(validPath)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("Error getting file info: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return fss.CallToolResultErr(fmt.Sprintf("Error getting file info: %v", err)), nil
 	}
 
 	// Get MIME type for files
@@ -1312,14 +957,7 @@ func (fss *FilesystemServer) handleListAllowedDirectories(
 		result.WriteString(fmt.Sprintf("%s (%s)\n", dir, resourceURI))
 	}
 
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: result.String(),
-			},
-		},
-	}, nil
+	return fss.CallToolResult(result.String()), nil
 }
 
 // Config returns the configuration of the service as a string.

@@ -27,6 +27,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -175,24 +176,9 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 
 	err := chromedp.Run(bs.ctx, chromedp.Navigate(url))
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("failed to navigate: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return bs.CallToolResultErr(fmt.Sprintf("failed to navigate: %v", err)), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Navigated to %s", url),
-			},
-		},
-	}, nil
+	return bs.CallToolResult(fmt.Sprintf("Navigated to %s", url)), nil
 }
 
 // init initializes the browser server by creating the user data directory.
@@ -229,7 +215,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name, ok := request.Params.Arguments["name"].(string)
 	if !ok {
-		return nil, fmt.Errorf("name must be a string")
+		return bs.CallToolResultErr("name must be a string"), nil
 	}
 	selector, _ := request.Params.Arguments["selector"].(string)
 	width, _ := request.Params.Arguments["width"].(int)
@@ -248,51 +234,16 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 		err = chromedp.Run(bs.ctx, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible, chromedp.ByQuery))
 	}
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("failed to take screenshot: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return bs.CallToolResultErr(fmt.Sprintf("failed to take screenshot: %v", err)), nil
 	}
 
 	//
-	newName := filepath.Join(bs.config.DataPath, fmt.Sprintf("%s_%d.png", name, rand.Int()))
+	newName := filepath.Join(bs.config.DataPath, fmt.Sprintf("%s_%d.png", strings.TrimRight(name, ".png"), rand.Int()))
 	err = os.WriteFile(newName, buf, 0644)
 	if err != nil {
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				mcp.TextContent{
-					Type: "text",
-					Text: fmt.Sprintf("failed to save screenshot: %v", err),
-				},
-			},
-			IsError: true,
-		}, nil
+		return bs.CallToolResultErr(fmt.Sprintf("failed to save screenshot: %v", err)), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: newName,
-			},
-			//mcp.ImageContent{
-			//	Type:     "image",
-			//	MIMEType: "image/png",
-			//	Data:     base64.StdEncoding.EncodeToString(buf),
-			//},
-			//mcp.EmbeddedResource{
-			//	Type: "image/png",
-			//	Resource: mcp.BlobResourceContents{
-			//		URI:      newName,
-			//		MIMEType: "image/png",
-			//	},
-			//},
-		},
-	}, nil
+	return bs.CallToolResult(fmt.Sprintf("Screenshot saved to:%s", newName)), nil
 }
 
 // handleClick handles the click action on a specified element.
