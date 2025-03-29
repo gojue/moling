@@ -171,8 +171,8 @@ func (mls *MLService) NotificationHandlers() map[string]server.NotificationHandl
 	return mls.notificationHandlers
 }
 
-// CallToolResult return a CallToolResult with the given message and error status.
-func (mls *MLService) CallToolResult(isError bool, msg string) *mcp.CallToolResult {
+// callToolResult returns a CallToolResult with the given message and error status.
+func (mls *MLService) callToolResult(isError bool, msg string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			mcp.TextContent{
@@ -182,6 +182,16 @@ func (mls *MLService) CallToolResult(isError bool, msg string) *mcp.CallToolResu
 		},
 		IsError: isError,
 	}
+}
+
+// CallToolResult return a CallToolResult with the given message and success status.
+func (mls *MLService) CallToolResult(msg string) *mcp.CallToolResult {
+	return mls.callToolResult(false, msg)
+}
+
+// CallToolResultErr return a CallToolResult with the given message and error status.
+func (mls *MLService) CallToolResultErr(msg string) *mcp.CallToolResult {
+	return mls.callToolResult(true, msg)
 }
 
 func (mls *MLService) MlConfig() *MoLingConfig {

@@ -27,10 +27,11 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
-	DataPath = "browser" // Path to store browser data
+	BrowserDataPath = "browser" // Path to store browser data
 )
 
 // BrowserServer represents the configuration for the browser service.
@@ -47,7 +48,7 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 
 	bc := NewBrowserConfig()
 	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
-	userDataDir := filepath.Join(globalConf.BasePath, DataPath)
+	userDataDir := filepath.Join(globalConf.BasePath, BrowserDataPath)
 
 	bc.DataPath = filepath.Join(globalConf.BasePath, "data")
 	logger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
@@ -69,16 +70,19 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 		return nil, fmt.Errorf("failed to initialize browser: %v", err)
 	}
 	// Create a new context for the browser
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+	opts := append(
+		chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent(bc.UserAgent),
 		chromedp.Flag("lang", bc.DefaultLanguage),
+
+		chromedp.Flag("headless", false),
+		// Like in Puppeteer.
+		chromedp.Flag("hide-scrollbars", false),
+		chromedp.Flag("mute-audio", true),
 		chromedp.CombinedOutput(logger),
 		chromedp.WindowSize(1312, 848),
 		chromedp.UserDataDir(userDataDir),
-		//chromedp.Headless,
-		//chromedp.NoFirstRun,
-		//chromedp.NoDefaultBrowserCheck,
-		//chromedp.IgnoreCertErrors,
+		chromedp.IgnoreCertErrors,
 	)
 	bs.ctx, bs.cancel = chromedp.NewExecAllocator(ctx, opts...)
 
@@ -198,13 +202,20 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 		return fmt.Errorf("failed to stat user data directory: %v", err)
 	}
 
-	// Check if the directory exists
+	// Check if the directory exists, if it does, we can reuse it
 	if err == nil {
-		// Directory exists, clean it up
-		err = os.RemoveAll(userDataDir)
-		if err != nil {
-			return fmt.Errorf("failed to remove user data directory: %v", err)
+		//  判断浏览器运行锁
+		// .moling/browser/SingletonLock
+		singletonLock := filepath.Join(userDataDir, "SingletonLock")
+		_, err = os.Stat(singletonLock)
+		if err == nil {
+			bs.logger.Debug().Msg("Browser is already running, removing SingletonLock")
+			err = os.RemoveAll(singletonLock)
+			if err != nil {
+				bs.logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %v", err)
+			}
 		}
+		return nil
 	}
 	// Create the directory
 	err = os.MkdirAll(userDataDir, 0755)
@@ -284,117 +295,85 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 	}, nil
 }
 
+// handleClick handles the click action on a specified element.
 func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return nil, fmt.Errorf("selector must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
 	err := chromedp.Run(bs.ctx, chromedp.Click(selector, chromedp.NodeVisible, chromedp.ByQuery))
 	if err != nil {
-		return nil, fmt.Errorf("failed to click element: %v", err)
+		return bs.CallToolResultErr(fmt.Errorf("failed to click element: %v", err).Error()), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Clicked element %s", selector),
-			},
-		},
-	}, nil
+	return bs.CallToolResult(fmt.Sprintf("Clicked element %s", selector)), nil
 }
 
+// handleFill handles the fill action on a specified input field.
 func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return nil, fmt.Errorf("selector must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("failed to fill selector:%v", request.Params.Arguments["selector"])), nil
 	}
 	value, ok := request.Params.Arguments["value"].(string)
 	if !ok {
-		return nil, fmt.Errorf("value must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v, selector:%v", request.Params.Arguments["value"], selector)), nil
 	}
 	err := chromedp.Run(bs.ctx, chromedp.SendKeys(selector, value, chromedp.NodeVisible, chromedp.ByQuery))
 	if err != nil {
-		return nil, fmt.Errorf("failed to fill input field: %v", err)
+		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v", err)), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Filled input %s with value %s", selector, value),
-			},
-		},
-	}, nil
+	return bs.CallToolResult(fmt.Sprintf("Filled input %s with value %s", selector, value)), nil
 }
 
 func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return nil, fmt.Errorf("selector must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("failed to select selector:%v", request.Params.Arguments["selector"])), nil
 	}
 	value, ok := request.Params.Arguments["value"].(string)
 	if !ok {
-		return nil, fmt.Errorf("value must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("failed to select value:%v", request.Params.Arguments["value"])), nil
 	}
 	err := chromedp.Run(bs.ctx, chromedp.SetValue(selector, value, chromedp.NodeVisible, chromedp.ByQuery))
 	if err != nil {
-		return nil, fmt.Errorf("failed to select value: %v", err)
+		return bs.CallToolResultErr(fmt.Errorf("failed to select value: %v", err).Error()), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Selected value %s for element %s", value, selector),
-			},
-		},
-	}, nil
+	return bs.CallToolResult(fmt.Sprintf("Selected value %s for element %s", value, selector)), nil
 }
 
 // handleHover handles the hover action on a specified element.
 func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return nil, fmt.Errorf("selector must be a string")
+		return bs.CallToolResultErr(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
 	var res bool
 	err := chromedp.Run(bs.ctx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
-		return nil, fmt.Errorf("failed to hover over element: %v", err)
+		return bs.CallToolResultErr(fmt.Errorf("failed to hover over element: %v", err).Error()), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Hovered over element %s, result:%t", selector, res),
-			},
-		},
-	}, nil
+	return bs.CallToolResultErr(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
 }
 
 func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	script, ok := request.Params.Arguments["script"].(string)
 	if !ok {
-		return nil, fmt.Errorf("script must be a string")
+		return bs.CallToolResultErr("script must be a string"), nil
 	}
 	var result interface{}
 	err := chromedp.Run(bs.ctx, chromedp.Evaluate(script, &result))
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute script: %v", err)
+		return bs.CallToolResultErr(fmt.Errorf("failed to execute script: %v", err).Error()), nil
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			mcp.TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Script executed successfully: %v", result),
-			},
-		},
-	}, nil
+	return bs.CallToolResultErr(fmt.Sprintf("Script executed successfully: %v", result)), nil
 }
 
 func (bs *BrowserServer) Close() error {
-	bs.cancel()
-
+	bs.logger.Debug().Msg("Closing browser server")
+	tctx, tcancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer tcancel()
 	// Cancel the context to stop the browser
-	return chromedp.Cancel(bs.ctx)
+	return chromedp.Cancel(tctx)
 }
 
 // Config returns the configuration of the service as a string.

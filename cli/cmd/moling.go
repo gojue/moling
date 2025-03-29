@@ -18,16 +18,19 @@ import (
 	"context"
 	"github.com/gojue/moling/services"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/zerolog"
+	"log"
 )
 
 type MoLingServer struct {
 	ctx        context.Context
 	server     *server.MCPServer
 	services   []services.Service
+	logger     zerolog.Logger
 	listenAddr string // SSE mode listen address, if empty, use STDIO mode.
 }
 
-func NewMoLingServer(ctx context.Context, services []services.Service) (*MoLingServer, error) {
+func NewMoLingServer(ctx context.Context, srvs []services.Service) (*MoLingServer, error) {
 	mcpServer := server.NewMCPServer(
 		MCPServerName,
 		GitVersion,
@@ -39,8 +42,9 @@ func NewMoLingServer(ctx context.Context, services []services.Service) (*MoLingS
 	ms := &MoLingServer{
 		ctx:        ctx,
 		server:     mcpServer,
-		services:   services,
+		services:   srvs,
 		listenAddr: mlConfig.ListenAddr,
+		logger:     ctx.Value(services.MoLingLoggerKey).(zerolog.Logger),
 	}
 	err := ms.init()
 	return ms, err
@@ -49,7 +53,11 @@ func NewMoLingServer(ctx context.Context, services []services.Service) (*MoLingS
 func (m *MoLingServer) init() error {
 	var err error
 	for _, srv := range m.services {
+		m.logger.Debug().Str("serviceName", srv.Name()).Msg("Loading service")
 		err = m.loadService(srv)
+		if err != nil {
+			m.logger.Info().Err(err).Str("serviceName", srv.Name()).Msg("Failed to load service")
+		}
 	}
 	return err
 }
@@ -83,9 +91,10 @@ func (m *MoLingServer) loadService(srv services.Service) error {
 }
 
 func (s *MoLingServer) Serve() error {
+	mLogger := log.New(s.logger, "MoLingServer", 0)
 	if s.listenAddr != "" {
 		return server.NewSSEServer(s.server, server.WithBaseURL(s.listenAddr),
 			server.WithBasePath("/mcp")).Start(s.listenAddr)
 	}
-	return server.ServeStdio(s.server)
+	return server.ServeStdio(s.server, server.WithErrorLogger(mLogger))
 }

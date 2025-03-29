@@ -1336,8 +1336,9 @@ func (fss *FilesystemServer) Name() string {
 	return "FilesystemServer"
 }
 
-func (bs *FilesystemServer) Close() error {
+func (fss *FilesystemServer) Close() error {
 	// Cancel the context to stop the browser
+	fss.logger.Debug().Msg("closing FilesystemServer")
 	return nil
 }
 

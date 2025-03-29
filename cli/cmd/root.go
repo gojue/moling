@@ -24,8 +24,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
+	"syscall"
 )
 
 const (
@@ -141,7 +143,7 @@ func initLogger(mlDataPath string) zerolog.Logger {
 		panic(fmt.Sprintf("failed to open log file %s: %v", logFile, err))
 	}
 	logger = zerolog.New(f).With().Timestamp().Logger()
-	logger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
+	//logger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	return logger
 }
 
@@ -151,36 +153,53 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
 	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
-
+	ctxNew, cancelFunc := context.WithCancel(ctx)
 	var srvs []services.Service
-	var closers []func() error
+	var closers = make(map[string]func() error)
 	for _, nsv := range services.ServiceList() {
-		srv, err := nsv(ctx, args)
+		srv, err := nsv(ctxNew, args)
 		if err != nil {
-			return err
+			loger.Error().Err(err).Msgf("failed to create service %s", srv.Name())
+			break
 		}
 		srvs = append(srvs, srv)
-		closers = append(closers, srv.Close)
+		closers[srv.Name()] = srv.Close
 	}
-
+	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	// MCPServer
-	srv, err := NewMoLingServer(ctx, srvs)
+	srv, err := NewMoLingServer(ctxNew, srvs)
 	if err != nil {
-		return err
-	}
-	err = srv.Serve()
-	if err != nil {
+		loger.Error().Err(err).Msg("failed to create server")
+		cancelFunc()
 		return err
 	}
 
+	go func() {
+		err = srv.Serve()
+		if err != nil {
+			loger.Error().Err(err).Msg("failed to start server")
+			cancelFunc()
+			return
+		}
+	}()
+
+	// 创建一个信号通道
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// 等待信号
+	_ = <-sigChan
+	loger.Info().Msg("Received signal, shutting down...")
+	// 创建一个超时上下文，用于优雅关闭
 	// close all services
-	for i, closer := range closers {
+	for srvName, closer := range closers {
 		err = closer()
 		if err != nil {
-			loger.Error().Err(err).Msgf("failed to close service %d", i)
+			loger.Error().Err(err).Msgf("failed to close service %s", srvName)
 		} else {
-			loger.Info().Msgf("service %d closed", i)
+			loger.Info().Msgf("service %s closed", srvName)
 		}
 	}
+	loger.Info().Msg("all services closed, Bye!")
 	return err
 }

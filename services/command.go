@@ -197,6 +197,7 @@ func (cs *CommandServer) Name() string {
 
 func (bs *CommandServer) Close() error {
 	// Cancel the context to stop the browser
+	bs.logger.Debug().Msg("CommandServer closed")
 	return nil
 }
 
