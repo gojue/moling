@@ -20,7 +20,10 @@
 
 package client
 
-import "path/filepath"
+import (
+	"os"
+	"path/filepath"
+)
 
 func init() {
 	clientLists["Cline"] = filepath.Join(os.Getenv("APPDATA"), "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
