@@ -38,7 +38,6 @@ var configCmd = &cobra.Command{
 }
 
 var (
-	force   bool
 	initial bool
 )
 
@@ -94,6 +93,8 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("Error loading config for service %s: %v\n", srv.Name(), err)
 			}
+		} else {
+			logger.Debug().Str("service", srv.Name()).Msg("Service not found in config, using default config")
 		}
 		// srv Init
 		err = srv.Init()
@@ -132,7 +133,9 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	}
 	logger.Info().Str("config", configFilePath).Msg("Current loaded configuration file path")
 	logger.Info().Msg("You can modify the configuration file to change the settings.")
-	logger.Info().Msgf("Configuration details: \n%s\n", formattedJson)
+	if !initial {
+		logger.Info().Msgf("Configuration details: \n%s\n", formattedJson)
+	}
 	return nil
 }
 

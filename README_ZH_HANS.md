@@ -19,6 +19,9 @@ MoLing是一个computer-use和browser-use的MCP Server，基于操作系统API�
 
 ### 功能特性
 
+> [!CAUTION]
+> 命令行操作具备一定风险性，且不可回滚，``.
+
 - **文件系统操作**：读取、写入、合并、统计和聚合
 - **命令行终端**：直接执行系统命令
 - **浏览器控制**：基于 `github.com/chromedp/chromedp`
@@ -27,6 +30,9 @@ MoLing是一个computer-use和browser-use的MCP Server，基于操作系统API�
     - 文档编写辅助
     - 行程规划
     - 生活助手功能
+
+> [!WARNING]
+> 当前, MoLing仅在macOS测试通过，Linux和Windows未经验证。
 
 ### 支持的MCP客户端
 
@@ -40,6 +46,13 @@ MoLing是一个computer-use和browser-use的MCP Server，基于操作系统API�
 ![](./images/screenshot_claude.png)
 
 #### 配置格式
+
+##### MCP Server（MoLing）配置
+
+配置文件会生成在`/Users/username/.moling/config/config.json`下，你可以自行修改内容。若文件不存在，你可以通过
+`moling config --init`创建它。
+
+##### MCP Client配置
 以Claude客户端为例，在配置文件中添加如下配置：
 
 > [!TIP]
@@ -58,7 +71,7 @@ MoLing是一个computer-use和browser-use的MCP Server，基于操作系统API�
 }
 ```
 
-另外， `/usr/local/bin/moling` 是你存放`MoLing server` 可执行文件的路径，可以自己指定。
+另外， `/usr/local/bin/moling` 是你存放`MoLing` Server可执行文件的路径，可以自己指定。
 
 ### 运行模式
 
@@ -73,7 +86,12 @@ MoLing是一个computer-use和browser-use的MCP Server，基于操作系统API�
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/moling/HEAD/install/install.sh)"
 ```
+
 ##### Windows
+
+[!WARNING]
+> 未测试，不确定是否正常。
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/gojue/moling/HEAD/install/install.ps1 | iex"
 ```

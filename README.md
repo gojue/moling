@@ -19,6 +19,9 @@ MoLing is a computer-use and browser-use MCP Server that implements system inter
 
 ### Features
 
+> [!CAUTION]
+> Command-line operations are dangerous and should be used with caution.
+
 - **File System Operations**: Reading, writing, merging, statistics, and aggregation
 - **Command-line Terminal**: Execute system commands directly
 - **Browser Control**: Powered by `github.com/chromedp/chromedp`
@@ -27,6 +30,9 @@ MoLing is a computer-use and browser-use MCP Server that implements system inter
     - Document writing assistance
     - Schedule planning
     - Life assistant features
+
+> [!WARNING]
+> Currently, MoLing has only been tested on macOS, and other operating systems may have issues.
 
 ### Supported MCP Clients
 
@@ -40,6 +46,15 @@ MoLing in [Claude](https://claude.ai/)
 ![](./images/screenshot_claude.png)
 
 #### Configuration Format
+
+##### MCP Server (MoLing) configuration
+
+The configuration file will be generated at `/Users/username/.moling/config/config.json`, and you can modify its
+contents as needed.
+
+If the file does not exist, you can create it using `moling config --init`.
+
+##### MCP Client configuration
 For example, to configure the Claude client, add the following configuration:
 
 > [!TIP]
@@ -74,6 +89,10 @@ and, `/usr/local/bin/moling` is the path to the MoLing server binary you downloa
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/moling/HEAD/install/install.sh)"
 ```
 ##### Windows
+
+[!WARNING]
+> Not tested, unsure if it works.
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/gojue/moling/HEAD/install/install.ps1 | iex"
 ```
