@@ -40,6 +40,7 @@ func NewFileSystemConfig(path string) *FileSystemConfig {
 	path = ""
 	if strings.TrimSpace(path) == "" {
 		path = allowedDirsDefault
+		paths = []string{allowedDirsDefault}
 	}
 
 	return &FileSystemConfig{

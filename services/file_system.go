@@ -87,13 +87,6 @@ func NewFilesystemServer(ctx context.Context) (Service, error) {
 }
 
 func (fs *FilesystemServer) Init() error {
-
-	// TODO
-	//err = fs.LoadConfig(fs.config, cfg)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	// Register resource handlers
 	fs.AddResource(mcp.NewResource("file://", "File System",
 		mcp.WithResourceDescription("Access to files and directories on the local file system"),
