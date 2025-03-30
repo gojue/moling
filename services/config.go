@@ -39,7 +39,13 @@ type MoLingConfig struct {
 	Username   string // The username of the user running the server.
 	HomeDir    string // The home directory of the user running the server. macOS: /Users/user1, Linux: /home/user1
 	SystemInfo string // The system information of the user running the server. macOS: Darwin 15.3.3, Linux: Ubuntu 20.04.1 LTS
-	logger     zerolog.Logger
+
+	// for MCP Server Config
+	Description string // Description of the MCP Server, default: CliDescription
+	Command     string //	Command to start the MCP Server, STDIO mode only,  default: CliName
+	Args        string // Arguments to pass to the command, STDIO mode only, default: empty
+	BaseUrl     string // BaseUrl , SSE mode only.
+	logger      zerolog.Logger
 }
 
 func (cfg *MoLingConfig) Check() error {
