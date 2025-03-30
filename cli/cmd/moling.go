@@ -16,10 +16,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"github.com/gojue/moling/services"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/zerolog"
 	"log"
+	"os"
+	"strings"
+	"time"
 )
 
 type MoLingServer struct {
@@ -91,10 +95,16 @@ func (m *MoLingServer) loadService(srv services.Service) error {
 }
 
 func (s *MoLingServer) Serve() error {
-	mLogger := log.New(s.logger, "MoLingServer", 0)
+	mLogger := log.New(s.logger, MCPServerName, 0)
 	if s.listenAddr != "" {
-		return server.NewSSEServer(s.server, server.WithBaseURL(s.listenAddr),
-			server.WithBasePath("/mcp")).Start(s.listenAddr)
+		ltnAddr := fmt.Sprintf("http://%s", strings.Trim(s.listenAddr, "http://"))
+		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		multi := zerolog.MultiLevelWriter(consoleWriter, s.logger)
+		s.logger = zerolog.New(multi).With().Timestamp().Logger()
+		s.logger.Info().Str("listenAddr", s.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
+		s.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
+		return server.NewSSEServer(s.server, server.WithBaseURL(ltnAddr)).Start(s.listenAddr)
 	}
+	s.logger.Info().Msg("Starting STDIO server")
 	return server.ServeStdio(s.server, server.WithErrorLogger(mLogger))
 }
