@@ -59,7 +59,7 @@ build:clean
 .PHONY: format
 format:
 	@echo "  ->  Formatting code"
-
+	golangci-lint run  --disable-all -E errcheck -E staticcheck
 .PHONY: test
 test:
 	CGO_ENABLED=1 go test -v -race ./...

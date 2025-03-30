@@ -17,18 +17,19 @@
 package cmd
 
 import (
+	"github.com/gojue/moling/services"
 	"github.com/spf13/cobra"
 	"path/filepath"
 )
 
 // mlsCommandPreFunc is a pre-run function for the MoLing command.
 func mlsCommandPreFunc(cmd *cobra.Command, args []string) error {
-	err := CreateDirectory(mlConfig.BasePath)
+	err := services.CreateDirectory(mlConfig.BasePath)
 	if err != nil {
 		return err
 	}
 	for _, dirName := range mlDirectories {
-		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
+		err = services.CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
 		if err != nil {
 			return err
 		}

@@ -56,7 +56,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 
 	// 当前配置文件检测
 	hasConfig := false
-	nowConfig := []byte{}
+	var nowConfig []byte
 	nowConfigJson := make(map[string]interface{})
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {

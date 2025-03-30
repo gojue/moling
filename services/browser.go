@@ -77,10 +77,13 @@ func (bs *BrowserServer) Init() error {
 	})
 
 	bs.logger = bs.logger.Hook(loggerNameHook)
-
 	err := bs.initBrowser(bs.config.BrowserDataPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize browser: %v", err)
+	}
+	err = CreateDirectory(bs.config.DataPath)
+	if err != nil {
+		return fmt.Errorf("failed to create data directory: %v", err)
 	}
 	// Create a new context for the browser
 	opts := append(
@@ -94,7 +97,7 @@ func (bs *BrowserServer) Init() error {
 		chromedp.Flag("mute-audio", true),
 		chromedp.CombinedOutput(bs.logger),
 		chromedp.WindowSize(1312, 848),
-		chromedp.UserDataDir(bs.config.DataPath),
+		chromedp.UserDataDir(bs.config.BrowserDataPath),
 		chromedp.IgnoreCertErrors,
 	)
 	bs.ctx, bs.cancel = chromedp.NewExecAllocator(bs.ctx, opts...)
