@@ -31,7 +31,8 @@ type BrowserConfig struct {
 	DefaultLanguage string `json:"default_language"`
 	URLTimeout      int    `json:"url_timeout"`
 	CSSTimeout      int    `json:"css_timeout"`
-	DataPath        string `json:"data_path"` // DataPath is the path to the data directory.
+	DataPath        string `json:"data_path"`         // DataPath is the path to the data directory.
+	BrowserDataPath string `json:"browser_data_path"` // BrowserDataPath is the path to the browser data directory.
 	//logger          *zerolog.Logger
 }
 
@@ -55,7 +56,7 @@ func NewBrowserConfig() *BrowserConfig {
 		Timeout:         30,
 		URLTimeout:      10,
 		CSSTimeout:      10,
-		UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3 (GoJue MoLing)",
+		UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
 		DefaultLanguage: "en-US",
 		DataPath:        filepath.Join(os.TempDir(), ".moling", "data"),
 	}

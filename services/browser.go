@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	BrowserDataPath = "browser" // Path to store browser data
+	BrowserServerName = "BrowserServer"
+	BrowserDataPath   = "browser" // Path to store browser data
 )
 
 // BrowserServer represents the configuration for the browser service.
@@ -40,58 +41,66 @@ type BrowserServer struct {
 	MLService
 	config *BrowserConfig
 	name   string // The name of the service
-	ctx    context.Context
 	cancel context.CancelFunc
 }
 
 // NewBrowserServer creates a new BrowserServer instance with the given context and configuration.
-func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
-
+func NewBrowserServer(ctx context.Context) (Service, error) {
 	bc := NewBrowserConfig()
 	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
-	userDataDir := filepath.Join(globalConf.BasePath, BrowserDataPath)
-
+	bc.BrowserDataPath = filepath.Join(globalConf.BasePath, BrowserDataPath)
 	bc.DataPath = filepath.Join(globalConf.BasePath, "data")
 	logger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
 	if !ok {
 		return nil, fmt.Errorf("BrowserServer: invalid logger type: %T", ctx.Value(MoLingLoggerKey))
 	}
-
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", "BrowserServer")
+		e.Str("Service", BrowserServerName)
+	})
+	bs := &BrowserServer{
+		MLService: NewMLService(ctx, logger.Hook(loggerNameHook), globalConf),
+		config:    bc,
+	}
+
+	err := bs.init()
+	if err != nil {
+		return nil, err
+	}
+
+	return bs, nil
+}
+
+// Init() initializes the browser server by creating a new context.
+func (bs *BrowserServer) Init() error {
+	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
+		e.Str("Service", bs.Name())
 	})
 
-	bs := &BrowserServer{
-		config: bc,
-	}
-	bs.logger = logger.Hook(loggerNameHook)
+	bs.logger = bs.logger.Hook(loggerNameHook)
 
-	err := bs.initBrowser(userDataDir)
+	err := bs.initBrowser(bs.config.BrowserDataPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize browser: %v", err)
+		return fmt.Errorf("failed to initialize browser: %v", err)
 	}
 	// Create a new context for the browser
 	opts := append(
 		chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.UserAgent(bc.UserAgent),
-		chromedp.Flag("lang", bc.DefaultLanguage),
+		chromedp.UserAgent(bs.config.UserAgent),
+		chromedp.Flag("lang", bs.config.DefaultLanguage),
 
 		chromedp.Flag("headless", false),
 		// Like in Puppeteer.
 		chromedp.Flag("hide-scrollbars", false),
 		chromedp.Flag("mute-audio", true),
-		chromedp.CombinedOutput(logger),
+		chromedp.CombinedOutput(bs.logger),
 		chromedp.WindowSize(1312, 848),
-		chromedp.UserDataDir(userDataDir),
+		chromedp.UserDataDir(bs.config.DataPath),
 		chromedp.IgnoreCertErrors,
 	)
-	bs.ctx, bs.cancel = chromedp.NewExecAllocator(ctx, opts...)
+	bs.ctx, bs.cancel = chromedp.NewExecAllocator(bs.ctx, opts...)
 
-	bs.ctx, bs.cancel = chromedp.NewContext(bs.ctx, chromedp.WithErrorf(logger.Printf))
-	err = bs.init()
-	if err != nil {
-		return nil, err
-	}
+	bs.ctx, bs.cancel = chromedp.NewContext(bs.ctx, chromedp.WithErrorf(bs.logger.Printf))
+
 	bs.AddTool(mcp.NewTool(
 		"browser_navigate",
 		mcp.WithDescription("Navigate to a URL"),
@@ -165,7 +174,7 @@ func NewBrowserServer(ctx context.Context, args []string) (Service, error) {
 			mcp.Required(),
 		),
 	), bs.handleEvaluate)
-	return bs, nil
+	return nil
 }
 
 func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -328,19 +337,28 @@ func (bs *BrowserServer) Close() error {
 }
 
 // Config returns the configuration of the service as a string.
-func (mls *BrowserServer) Config() string {
-	cfg, err := json.Marshal(mls.config)
+func (bs *BrowserServer) Config() string {
+	cfg, err := json.Marshal(bs.config)
 	if err != nil {
-		mls.logger.Err(err).Msg("failed to marshal config")
+		bs.logger.Err(err).Msg("failed to marshal config")
 		return "{}"
 	}
 	return string(cfg)
 }
 
-func (cs *BrowserServer) Name() string {
-	return "BrowserServer"
+func (bs *BrowserServer) Name() string {
+	return BrowserServerName
+}
+
+// LoadConfig loads the configuration from a JSON object.
+func (bs *BrowserServer) LoadConfig(jsonData map[string]interface{}) error {
+	err := mergeJSONToStruct(bs.config, jsonData)
+	if err != nil {
+		return err
+	}
+	return bs.config.Check()
 }
 
 func init() {
-	RegisterServ(NewBrowserServer)
+	RegisterServ(BrowserServerName, NewBrowserServer)
 }

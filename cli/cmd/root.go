@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gojue/moling/cli/cobrautl"
 	"github.com/gojue/moling/services"
@@ -150,16 +151,40 @@ func initLogger(mlDataPath string) zerolog.Logger {
 func mlsCommandFunc(command *cobra.Command, args []string) error {
 	loger := initLogger(mlConfig.BasePath)
 	mlConfig.SetLogger(loger)
+	var err error
+	var nowConfig []byte
+	var nowConfigJson map[string]interface{}
+	// 当前配置文件检测
+	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
+	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
+		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		if err != nil {
+			return fmt.Errorf("Error unmarshaling JSON: %v, config file:%s\n", err, configFilePath)
+		}
+	}
 
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
 	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
 	ctxNew, cancelFunc := context.WithCancel(ctx)
 	var srvs []services.Service
 	var closers = make(map[string]func() error)
-	for _, nsv := range services.ServiceList() {
-		srv, err := nsv(ctxNew, args)
+	for srvName, nsv := range services.ServiceList() {
+		cfg, ok := nowConfigJson[srvName].(map[string]interface{})
+		srv, err := nsv(ctxNew)
 		if err != nil {
 			loger.Error().Err(err).Msgf("failed to create service %s", srv.Name())
+			break
+		}
+		if ok {
+			err = srv.LoadConfig(cfg)
+			if err != nil {
+				loger.Error().Err(err).Msgf("failed to load config for service %s", srv.Name())
+				break
+			}
+		}
+		err = srv.Init()
+		if err != nil {
+			loger.Error().Err(err).Msgf("failed to init service %s", srv.Name())
 			break
 		}
 		srvs = append(srvs, srv)

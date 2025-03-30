@@ -44,6 +44,7 @@ var (
 
 // ConfigCommandFunc executes the "config" command.
 func ConfigCommandFunc(command *cobra.Command, args []string) error {
+	var err error
 	logger := initLogger(mlConfig.BasePath)
 	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	multi := zerolog.MultiLevelWriter(consoleWriter, logger)
@@ -52,6 +53,22 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	logger.Info().Msg("Start to show config")
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
 	ctx = context.WithValue(ctx, services.MoLingLoggerKey, logger)
+
+	// 当前配置文件检测
+	hasConfig := false
+	nowConfig := []byte{}
+	nowConfigJson := make(map[string]interface{})
+	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
+	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
+		hasConfig = true
+	}
+	if hasConfig {
+		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		if err != nil {
+			return fmt.Errorf("Error unmarshaling JSON: %v, payload:%s\n", err, string(nowConfig))
+		}
+	}
+
 	bf := bytes.Buffer{}
 	bf.WriteString("\n{\n")
 
@@ -63,10 +80,25 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	bf.WriteString("\t\"MoLingConfig\":\n")
 	bf.WriteString(fmt.Sprintf("\t%s,\n", mlConfigJson))
 	first := true
-	for _, nsv := range services.ServiceList() {
-		srv, err := nsv(ctx, args)
+	for srvName, nsv := range services.ServiceList() {
+		// 获取服务对应的配置
+		cfg, ok := nowConfigJson[srvName].(map[string]interface{})
+
+		srv, err := nsv(ctx)
 		if err != nil {
 			return err
+		}
+		// srv Loadconfig
+		if ok {
+			err = srv.LoadConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("Error loading config for service %s: %v\n", srv.Name(), err)
+			}
+		}
+		// srv Init
+		err = srv.Init()
+		if err != nil {
+			return fmt.Errorf("Error initializing service %s: %v\n", srv.Name(), err)
 		}
 		if !first {
 			bf.WriteString(",\n")
@@ -80,7 +112,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	var data interface{}
 	err = json.Unmarshal(bf.Bytes(), &data)
 	if err != nil {
-		return fmt.Errorf("Error unmarshaling JSON: %v\n", err)
+		return fmt.Errorf("Error unmarshaling JSON: %v, payload:%s\n", err, bf.String())
 	}
 
 	// 格式化 JSON
@@ -89,9 +121,8 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		return fmt.Errorf("Error marshaling JSON: %v\n", err)
 	}
 
-	// 判断是否存在配置文件
-	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
-	if _, err = os.Stat(configFilePath); os.IsNotExist(err) {
+	// 如果不存在配置文件
+	if !hasConfig {
 		logger.Info().Msgf("Configuration file %s does not exist. Creating a new one.", configFilePath)
 		err = os.WriteFile(configFilePath, formattedJson, 0644)
 		if err != nil {

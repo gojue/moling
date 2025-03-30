@@ -22,8 +22,8 @@ import (
 
 // CommandConfig represents the configuration for allowed commands.
 type CommandConfig struct {
-	// AllowedCommands is a list of allowed commands.
-	AllowedCommands []string `json:"allowed_commands"`
+	AllowedCommand  string `json:"allowed_command"` // AllowedCommand is a list of allowed command. split by comma. e.g. ls,cat,echo
+	allowedCommands []string
 }
 
 var (
@@ -39,22 +39,19 @@ var (
 )
 
 // NewCommandConfig creates a new CommandConfig with the given allowed commands.
-func NewCommandConfig(commands []string) *CommandConfig {
-	if len(commands) == 0 {
-		commands = allowedCmdDefault
-	}
+func NewCommandConfig() *CommandConfig {
 	return &CommandConfig{
-		AllowedCommands: commands,
+		allowedCommands: allowedCmdDefault,
 	}
 }
 
 // Check validates the allowed commands in the CommandConfig.
 func (cc *CommandConfig) Check() error {
 	var cnt int
-	cnt = len(cc.AllowedCommands)
+	cnt = len(cc.allowedCommands)
 
 	// Check if any command is empty
-	for _, cmd := range cc.AllowedCommands {
+	for _, cmd := range cc.allowedCommands {
 		if cmd == "" {
 			cnt -= 1
 		}

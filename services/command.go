@@ -34,6 +34,10 @@ var (
 	ErrCommandNotAllowed = fmt.Errorf("command not allowed")
 )
 
+const (
+	CommandServerName = "CommandServer"
+)
+
 // CommandServer implements the Service interface and provides methods to execute named commands.
 type CommandServer struct {
 	MLService
@@ -43,9 +47,9 @@ type CommandServer struct {
 }
 
 // NewCommandServer creates a new CommandServer with the given allowed commands.
-func NewCommandServer(ctx context.Context, args []string) (Service, error) {
+func NewCommandServer(ctx context.Context) (Service, error) {
 	var err error
-	cc := NewCommandConfig(args)
+	cc := NewCommandConfig()
 	gConf, ok := ctx.Value(MoLingConfigKey).(*MoLingConfig)
 	if !ok {
 		return nil, fmt.Errorf("CommandServer: invalid config type")
@@ -57,22 +61,28 @@ func NewCommandServer(ctx context.Context, args []string) (Service, error) {
 	}
 
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", "CommandServer")
+		e.Str("Service", CommandServerName)
 	})
 
 	cs := &CommandServer{
-		MLService: MLService{
-			ctx:      ctx,
-			logger:   lger.Hook(loggerNameHook),
-			mlConfig: gConf,
-		},
-		config: cc,
+		MLService: NewMLService(ctx, lger.Hook(loggerNameHook), gConf),
+		config:    cc,
 	}
 
 	err = cs.init()
 	if err != nil {
 		return nil, err
 	}
+
+	return cs, nil
+}
+
+func (cs *CommandServer) Init() error {
+	var err error
+	//err := cs.LoadConfig(cs.config, cfg)
+	//if err != nil {
+	//	return err
+	//}
 
 	pe := PromptEntry{
 		prompt: mcp.Prompt{
@@ -91,8 +101,7 @@ func NewCommandServer(ctx context.Context, args []string) (Service, error) {
 			mcp.Required(),
 		),
 	), cs.handleExecuteCommand)
-
-	return cs, nil
+	return err
 }
 
 func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
@@ -134,9 +143,8 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 
 // isAllowedCommand checks if the command is allowed based on the configuration.
 func (cs *CommandServer) isAllowedCommand(command string) bool {
-
 	// 检查命令是否在允许的列表中
-	for _, allowed := range cs.config.AllowedCommands {
+	for _, allowed := range cs.config.allowedCommands {
 		if strings.HasPrefix(command, allowed) {
 			return true
 		}
@@ -159,6 +167,7 @@ func (cs *CommandServer) isAllowedCommand(command string) bool {
 
 // Config returns the configuration of the service as a string.
 func (cs *CommandServer) Config() string {
+	cs.config.AllowedCommand = strings.Join(cs.config.allowedCommands, ",")
 	cfg, err := json.Marshal(cs.config)
 	if err != nil {
 		cs.logger.Err(err).Msg("failed to marshal config")
@@ -169,15 +178,26 @@ func (cs *CommandServer) Config() string {
 }
 
 func (cs *CommandServer) Name() string {
-	return "CommandServer"
+	return CommandServerName
 }
 
-func (bs *CommandServer) Close() error {
+func (cs *CommandServer) Close() error {
 	// Cancel the context to stop the browser
-	bs.logger.Debug().Msg("CommandServer closed")
+	cs.logger.Debug().Msg("CommandServer closed")
 	return nil
 }
 
+// LoadConfig loads the configuration from a JSON object.
+func (cs *CommandServer) LoadConfig(jsonData map[string]interface{}) error {
+	err := mergeJSONToStruct(cs.config, jsonData)
+	if err != nil {
+		return err
+	}
+	// split the AllowedCommand string into a slice
+	cs.config.allowedCommands = strings.Split(cs.config.AllowedCommand, ",")
+	return cs.config.Check()
+}
+
 func init() {
-	RegisterServ(NewCommandServer)
+	RegisterServ(CommandServerName, NewCommandServer)
 }

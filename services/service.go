@@ -48,6 +48,11 @@ type Service interface {
 
 	// Config returns the configuration of the service as a string.
 	Config() string
+	// LoadConfig loads the configuration for the service from a map.
+	LoadConfig(jsonData map[string]interface{}) error
+
+	// Init initializes the service with the given context and configuration.
+	Init() error
 
 	MlConfig() *MoLingConfig
 
@@ -70,6 +75,15 @@ func (pe *PromptEntry) Prompt() mcp.Prompt {
 func (pe *PromptEntry) Handler() server.PromptHandlerFunc {
 	return pe.phf
 
+}
+
+// NewMLService creates a new MLService with the given context and logger.
+func NewMLService(ctx context.Context, logger zerolog.Logger, cfg *MoLingConfig) MLService {
+	return MLService{
+		ctx:      ctx,
+		logger:   logger,
+		mlConfig: cfg,
+	}
 }
 
 // MLService implements the Service interface and provides methods to manage resources, templates, prompts, tools, and notification handlers.
@@ -194,6 +208,7 @@ func (mls *MLService) callToolResult(isError bool, msg string) *mcp.CallToolResu
 	}
 }
 
+// MlConfig returns the configuration of the MoLing service.
 func (mls *MLService) MlConfig() *MoLingConfig {
 	return mls.mlConfig
 }
@@ -203,6 +218,17 @@ func (mls *MLService) Config() string {
 	panic("not implemented yet") // TODO: Implement
 }
 
+// Name returns the name of the service.
 func (mls *MLService) Name() string {
 	panic("not implemented yet") // TODO: Implement
+}
+
+// LoadConfig loads the configuration for the service from a map.
+func (mls *MLService) LoadConfig(jsonData map[string]interface{}) error {
+	//panic("not implemented yet") // TODO: Implement
+	err := mergeJSONToStruct(mls.mlConfig, jsonData)
+	if err != nil {
+		return err
+	}
+	return mls.mlConfig.Check()
 }

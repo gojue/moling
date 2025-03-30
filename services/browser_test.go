@@ -59,7 +59,8 @@ func TestBrowserServer(t *testing.T) {
 		t.Fatalf("Failed to initialize test environment: %v", err)
 	}
 	logger.Info().Msg("TestBrowserServer")
-	_, err = NewBrowserServer(ctx, []string{"--headless"})
+
+	_, err = NewBrowserServer(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create BrowserServer: %v", err)
 	}

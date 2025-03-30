@@ -37,6 +37,9 @@ const (
 	// MaxBase64Size Maximum size for base64 encoding (1MB)
 	MaxBase64Size = 1024 * 1024 * 1
 )
+const (
+	FilesystemServerName = "FilesystemServer"
+)
 
 type FileInfo struct {
 	Size        int64     `json:"size"`
@@ -53,17 +56,13 @@ type FilesystemServer struct {
 	config *FileSystemConfig
 }
 
-func NewFilesystemServer(ctx context.Context, args []string) (Service, error) {
+func NewFilesystemServer(ctx context.Context) (Service, error) {
 	// Validate the config
 	var err error
 	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
 	userDataDir := filepath.Join(globalConf.BasePath, "data")
 
-	fc := NewFileSystemConfig([]string{userDataDir})
-
-	if err = fc.Check(); err != nil {
-		return nil, fmt.Errorf("FilesystemServer: invalid config: %v", err)
-	}
+	fc := NewFileSystemConfig(userDataDir)
 
 	lger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
 	if !ok {
@@ -71,20 +70,30 @@ func NewFilesystemServer(ctx context.Context, args []string) (Service, error) {
 	}
 
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", "FileSystemServer")
+		e.Str("Service", FilesystemServerName)
 	})
 
 	fs := &FilesystemServer{
-		MLService: MLService{
-			ctx:    ctx,
-			logger: lger.Hook(loggerNameHook),
-		},
-		config: fc,
+		MLService: NewMLService(ctx, lger.Hook(loggerNameHook), globalConf),
+		config:    fc,
 	}
+
 	err = fs.init()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize filesystem server: %v", err)
 	}
+
+	return fs, nil
+}
+
+func (fs *FilesystemServer) Init() error {
+
+	// TODO
+	//err = fs.LoadConfig(fs.config, cfg)
+	//if err != nil {
+	//	return nil, err
+	//}
+
 	// Register resource handlers
 	fs.AddResource(mcp.NewResource("file://", "File System",
 		mcp.WithResourceDescription("Access to files and directories on the local file system"),
@@ -169,8 +178,7 @@ func NewFilesystemServer(ctx context.Context, args []string) (Service, error) {
 		"list_allowed_directories",
 		mcp.WithDescription("Returns the list of directories that this server is allowed to access."),
 	), fs.handleListAllowedDirectories)
-
-	return fs, nil
+	return nil
 }
 
 // isPathInAllowedDirs checks if a path is within any of the allowed directories
@@ -193,7 +201,7 @@ func (fss *FilesystemServer) isPathInAllowedDirs(path string) bool {
 	}
 
 	// Check if the path is within any of the allowed directories
-	for _, dir := range fss.config.AllowedDirs {
+	for _, dir := range fss.config.allowedDirs {
 		if strings.HasPrefix(absPath, dir) {
 			return true
 		}
@@ -939,13 +947,10 @@ func (fss *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.
 	}, nil
 }
 
-func (fss *FilesystemServer) handleListAllowedDirectories(
-	ctx context.Context,
-	request mcp.CallToolRequest,
-) (*mcp.CallToolResult, error) {
+func (fss *FilesystemServer) handleListAllowedDirectories(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Remove the trailing separator for display purposes
-	displayDirs := make([]string, len(fss.config.AllowedDirs))
-	for i, dir := range fss.config.AllowedDirs {
+	displayDirs := make([]string, len(fss.config.allowedDirs))
+	for i, dir := range fss.config.allowedDirs {
 		displayDirs[i] = strings.TrimSuffix(dir, string(filepath.Separator))
 	}
 
@@ -962,6 +967,7 @@ func (fss *FilesystemServer) handleListAllowedDirectories(
 
 // Config returns the configuration of the service as a string.
 func (fss *FilesystemServer) Config() string {
+	fss.config.AllowedDir = strings.Join(fss.config.allowedDirs, ",")
 	cfg, err := json.Marshal(fss.config)
 	if err != nil {
 		fss.logger.Err(err).Msg("failed to marshal config")
@@ -971,7 +977,7 @@ func (fss *FilesystemServer) Config() string {
 }
 
 func (fss *FilesystemServer) Name() string {
-	return "FilesystemServer"
+	return FilesystemServerName
 }
 
 func (fss *FilesystemServer) Close() error {
@@ -980,6 +986,16 @@ func (fss *FilesystemServer) Close() error {
 	return nil
 }
 
+// LoadConfig loads the configuration from a JSON object.
+func (fss *FilesystemServer) LoadConfig(jsonData map[string]interface{}) error {
+	err := mergeJSONToStruct(fss.config, jsonData)
+	if err != nil {
+		return err
+	}
+	fss.config.allowedDirs = strings.Split(fss.config.AllowedDir, ",")
+	return fss.config.Check()
+}
+
 func init() {
-	RegisterServ(NewFilesystemServer)
+	RegisterServ(FilesystemServerName, NewFilesystemServer)
 }
