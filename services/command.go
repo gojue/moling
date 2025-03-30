@@ -79,10 +79,6 @@ func NewCommandServer(ctx context.Context) (Service, error) {
 
 func (cs *CommandServer) Init() error {
 	var err error
-	//err := cs.LoadConfig(cs.config, cfg)
-	//if err != nil {
-	//	return err
-	//}
 
 	pe := PromptEntry{
 		prompt: mcp.Prompt{

@@ -1,0 +1,28 @@
+{
+  "BrowserServer": {
+  },
+  "CommandServer": {
+    "allowed_commands": [
+      "ls",
+      "cat",
+      "echo"
+    ]
+  },
+  "FilesystemServer": {
+    "allowed_dirs": [
+      "/tmp/.moling/data/"
+    ],
+    "cache_path": "/tmp/.moling/data"
+  },
+  "MoLingConfig": {
+    "HomeDir": "",
+    "SystemInfo": "",
+    "Username": "",
+    "base_path": "/newpath/.moling",
+    "config_file": "config/config.json",
+    "debug": false,
+    "listen_addr": "",
+    "version": "darwin-arm64-20250330084836-0077553"
+  },
+  "MoaServer": {}
+}

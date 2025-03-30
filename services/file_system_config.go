@@ -38,7 +38,7 @@ type FileSystemConfig struct {
 func NewFileSystemConfig(path string) *FileSystemConfig {
 	paths := strings.Split(path, ",")
 	path = ""
-	if len(paths) == 0 {
+	if strings.TrimSpace(path) == "" {
 		path = allowedDirsDefault
 	}
 
