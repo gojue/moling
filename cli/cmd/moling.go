@@ -97,7 +97,7 @@ func (m *MoLingServer) loadService(srv services.Service) error {
 func (s *MoLingServer) Serve() error {
 	mLogger := log.New(s.logger, MCPServerName, 0)
 	if s.listenAddr != "" {
-		ltnAddr := fmt.Sprintf("http://%s", strings.Trim(s.listenAddr, "http://"))
+		ltnAddr := fmt.Sprintf("http://%s", strings.TrimPrefix(s.listenAddr, "http://"))
 		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 		multi := zerolog.MultiLevelWriter(consoleWriter, s.logger)
 		s.logger = zerolog.New(multi).With().Timestamp().Logger()

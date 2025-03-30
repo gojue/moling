@@ -2,7 +2,7 @@ include variables.mk
 include functions.mk
 
 .PHONY: all | env
-all: clean test build
+all: clean test format build
 	@echo $(shell date)
 
 .ONESHELL:
@@ -59,7 +59,8 @@ build:clean
 .PHONY: format
 format:
 	@echo "  ->  Formatting code"
-	golangci-lint run  --disable-all -E errcheck -E staticcheck
+	golangci-lint run --disable-all -E errcheck -E staticcheck
+
 .PHONY: test
 test:
 	CGO_ENABLED=1 go test -v -race ./...
