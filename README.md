@@ -1,6 +1,6 @@
 ## MoLing MCP Server
 
-English | [中文](./README_ZH_HANS.md)
+English | [中文](./README_ZH_HANS.md) | [日本語](./README_JA_JP.md)
 
 [![GitHub stars](https://img.shields.io/github/stars/gojue/moling.svg?label=Stars&logo=github)](https://github.com/gojue/moling)
 [![GitHub forks](https://img.shields.io/github/forks/gojue/moling?label=Forks&logo=github)](https://github.com/gojue/moling)
