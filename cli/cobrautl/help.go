@@ -96,7 +96,7 @@ GLOBAL OPTIONS:
 	commandUsageTemplate = template.Must(template.New("command_usage").Funcs(templFuncs).Parse(strings.Replace(commandUsage, "\\\n", "", -1)))
 }
 
-func ecaptureFlagUsages(flagSet *pflag.FlagSet) string {
+func molingFlagUsages(flagSet *pflag.FlagSet) string {
 	x := new(bytes.Buffer)
 
 	flagSet.VisitAll(func(flag *pflag.Flag) {
@@ -149,8 +149,8 @@ func UsageFunc(cmd *cobra.Command, version string) error {
 		Version     string
 	}{
 		cmd,
-		ecaptureFlagUsages(cmd.LocalFlags()),
-		ecaptureFlagUsages(cmd.InheritedFlags()),
+		molingFlagUsages(cmd.LocalFlags()),
+		molingFlagUsages(cmd.InheritedFlags()),
 		subCommands,
 		version,
 	})

@@ -11,9 +11,8 @@ SHELL = /bin/bash
 .PHONY: env
 env:
 	@echo ---------------------------------------
-	@echo "eCapture Makefile Environment:"
+	@echo "MoLing Makefile Environment:"
 	@echo ---------------------------------------
-	@echo ----------------[ from args ]---------------
 	@echo "SNAPSHOT_VERSION         $(SNAPSHOT_VERSION)"
 	@echo ---------------------------------------
 	@echo "OS_NAME                  $(OS_NAME)"
@@ -38,7 +37,7 @@ help:
 	@echo "    $$ make env					# show makefile environment/variables"
 	@echo ""
 	@echo "# build"
-	@echo "    $$ make all					# build ecapture"
+	@echo "    $$ make all					# build MoLing"
 	@echo ""
 	@echo "# clean"
 	@echo "    $$ make clean				# wipe ./bin/"
