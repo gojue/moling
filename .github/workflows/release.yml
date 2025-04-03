@@ -27,8 +27,8 @@ jobs:
       - name: MoLing Build
         run: |
           make clean
-          TARGET_OS=${{ matrix.os }} TARGET_ARCH=${{ matrix.arch }} make env
-          TARGET_OS=${{ matrix.os }} TARGET_ARCH=${{ matrix.arch }} make build
+          SNAPSHOT_VERSION=${{ github.ref_name }} TARGET_OS=${{ matrix.os }} TARGET_ARCH=${{ matrix.arch }} make env
+          SNAPSHOT_VERSION=${{ github.ref_name }} TARGET_OS=${{ matrix.os }} TARGET_ARCH=${{ matrix.arch }} make build
           pwd
           ls -al ./bin
       - name: Create Archive
@@ -41,11 +41,15 @@ jobs:
           else
             tar -czvf dist/moling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz -C ./bin/ .
           fi
+  upload-release-assets:
+    needs: build-on-ubuntu2204
+    runs-on: ubuntu-22.04
+    steps:
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-            tag_name: ${{ github.ref_name }}
-            generate_release_notes: true
-            files: |
-                ./dist/moling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ./dist/moling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
