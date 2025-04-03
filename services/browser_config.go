@@ -24,15 +24,15 @@ import (
 )
 
 type BrowserConfig struct {
-	Headless        bool   `json:"headless"`
-	Timeout         int    `json:"timeout"`
-	Proxy           string `json:"proxy"`
-	UserAgent       string `json:"user_agent"`
-	DefaultLanguage string `json:"default_language"`
-	URLTimeout      int    `json:"url_timeout"` // URLTimeout is the timeout for loading a URL. time.Second
-	CSSTimeout      int    `json:"css_timeout"`
-	DataPath        string `json:"data_path"`         // DataPath is the path to the data directory.
-	BrowserDataPath string `json:"browser_data_path"` // BrowserDataPath is the path to the browser data directory.
+	Headless             bool   `json:"headless"`
+	Timeout              int    `json:"timeout"`
+	Proxy                string `json:"proxy"`
+	UserAgent            string `json:"user_agent"`
+	DefaultLanguage      string `json:"default_language"`
+	URLTimeout           int    `json:"url_timeout"`            // URLTimeout is the timeout for loading a URL. time.Second
+	SelectorQueryTimeout int    `json:"selector_query_timeout"` // SelectorQueryTimeout is the timeout for CSS selector queries. time.Second
+	DataPath             string `json:"data_path"`              // DataPath is the path to the data directory.
+	BrowserDataPath      string `json:"browser_data_path"`      // BrowserDataPath is the path to the browser data directory.
 	//logger          *zerolog.Logger
 }
 
@@ -43,8 +43,8 @@ func (cfg *BrowserConfig) Check() error {
 	if cfg.URLTimeout <= 0 {
 		return fmt.Errorf("URL timeout must be greater than 0")
 	}
-	if cfg.CSSTimeout <= 0 {
-		return fmt.Errorf("CSS timeout must be greater than 0")
+	if cfg.SelectorQueryTimeout <= 0 {
+		return fmt.Errorf("selector Query timeout must be greater than 0")
 	}
 	return nil
 }
@@ -52,12 +52,12 @@ func (cfg *BrowserConfig) Check() error {
 // NewBrowserConfig creates a new BrowserConfig with default values.
 func NewBrowserConfig() *BrowserConfig {
 	return &BrowserConfig{
-		Headless:        false,
-		Timeout:         30,
-		URLTimeout:      10,
-		CSSTimeout:      10,
-		UserAgent:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
-		DefaultLanguage: "en-US",
-		DataPath:        filepath.Join(os.TempDir(), ".moling", "data"),
+		Headless:             false,
+		Timeout:              30,
+		URLTimeout:           10,
+		SelectorQueryTimeout: 10,
+		UserAgent:            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+		DefaultLanguage:      "en-US",
+		DataPath:             filepath.Join(os.TempDir(), ".moling", "data"),
 	}
 }

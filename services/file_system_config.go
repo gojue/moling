@@ -54,11 +54,10 @@ func NewFileSystemConfig(path string) *FileSystemConfig {
 func (fc *FileSystemConfig) Check() error {
 	normalized := make([]string, 0, len(fc.allowedDirs))
 	for _, dir := range fc.allowedDirs {
-		abs, err := filepath.Abs(dir)
+		abs, err := filepath.Abs(strings.TrimSpace(dir))
 		if err != nil {
 			return fmt.Errorf("failed to resolve path %s: %w", dir, err)
 		}
-
 		info, err := os.Stat(abs)
 		if err != nil {
 			return fmt.Errorf("failed to access directory %s: %w", abs, err)

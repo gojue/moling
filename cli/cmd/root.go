@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/gojue/moling/cli/cobrautl"
 	"github.com/gojue/moling/services"
+	"github.com/gojue/moling/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"os"
@@ -65,8 +66,10 @@ Usage:
 )
 
 const (
-	MLConfigName = "config.json" // config file name of MoLing Server
-	MLROOTPATH   = ".moling"     // config file name of MoLing Server
+	MLConfigName = "config.json"     // config file name of MoLing Server
+	MLROOTPATH   = ".moling"         // config file name of MoLing Server
+	LogFileName  = "moling.log"      //	log file name
+	MaxLogSize   = 1024 * 1024 * 512 // 512MB
 )
 
 var (
@@ -139,19 +142,19 @@ func init() {
 func initLogger(mlDataPath string) zerolog.Logger {
 	var logger zerolog.Logger
 	var err error
-	logFile := filepath.Join(mlDataPath, "logs", "moling.log")
-	//zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	logFile := filepath.Join(mlDataPath, "logs", LogFileName)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if mlConfig.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-	var f *os.File
-	f, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+
+	// 初始化 RotateWriter
+	rw, err := utils.NewRotateWriter(logFile, MaxLogSize) // 512MB 阈值
 	if err != nil {
 		panic(fmt.Sprintf("failed to open log file %s: %v", logFile, err))
 	}
-	logger = zerolog.New(f).With().Timestamp().Logger()
-	//logger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
+	logger = zerolog.New(rw).With().Timestamp().Logger()
+	logger.Info().Uint32("MaxLogSize", MaxLogSize).Msgf("Log files are automatically rotated when they exceed the size threshold, and saved to %s.1 and %s.2 respectively", LogFileName, LogFileName)
 	return logger
 }
 
@@ -162,6 +165,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	var nowConfig []byte
 	var nowConfigJson map[string]interface{}
 	// 当前配置文件检测
+	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
 		err = json.Unmarshal(nowConfig, &nowConfigJson)
@@ -169,7 +173,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 			return fmt.Errorf("Error unmarshaling JSON: %v, config file:%s\n", err, configFilePath)
 		}
 	}
-
+	loger.Info().Str("config_file", configFilePath).Msg("load config file")
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
 	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
 	ctxNew, cancelFunc := context.WithCancel(ctx)
@@ -197,7 +201,6 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 		srvs = append(srvs, srv)
 		closers[srv.Name()] = srv.Close
 	}
-	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	// MCPServer
 	srv, err := services.NewMoLingServer(ctxNew, srvs, *mlConfig)
 	if err != nil {

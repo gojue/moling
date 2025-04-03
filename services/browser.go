@@ -28,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -101,6 +102,7 @@ func (bs *BrowserServer) Init() error {
 		chromedp.Flag("mute-audio", true),
 		chromedp.Flag("disable-infobars", true),
 		chromedp.Flag("disable-extensions", true),
+		chromedp.Flag("CommandLineFlagSecurityWarningsEnabled", false),
 		chromedp.CombinedOutput(bs.logger),
 		chromedp.WindowSize(1700, 1050),
 		chromedp.UserDataDir(bs.config.BrowserDataPath),
@@ -113,6 +115,15 @@ func (bs *BrowserServer) Init() error {
 		chromedp.WithDebugf(bs.logger.Debug().Msgf),
 	)
 
+	pe := PromptEntry{
+		prompt: mcp.Prompt{
+			Name:        "browser_prompt",
+			Description: fmt.Sprintf("相关操作，必需使用标准的CSS选择器"),
+			//Arguments:   make([]mcp.PromptArgument, 0),
+		},
+		phf: bs.handlePrompt,
+	}
+	bs.AddPrompt(pe)
 	bs.AddTool(mcp.NewTool(
 		"browser_navigate",
 		mcp.WithDescription("Navigate to a URL"),
@@ -129,7 +140,7 @@ func (bs *BrowserServer) Init() error {
 			mcp.Required(),
 		),
 		mcp.WithString("selector",
-			mcp.Description("XPath and CSS selector for element to screenshot"),
+			mcp.Description("CSS selector for element to screenshot"),
 		),
 		mcp.WithNumber("width",
 			mcp.Description("Width in pixels (default: 1700)"),
@@ -142,7 +153,7 @@ func (bs *BrowserServer) Init() error {
 		"browser_click",
 		mcp.WithDescription("Click an element on the page"),
 		mcp.WithString("selector",
-			mcp.Description("XPath and CSS selector for element to click"),
+			mcp.Description("CSS selector for element to click"),
 			mcp.Required(),
 		),
 	), bs.handleClick)
@@ -150,7 +161,7 @@ func (bs *BrowserServer) Init() error {
 		"browser_fill",
 		mcp.WithDescription("Fill out an input field"),
 		mcp.WithString("selector",
-			mcp.Description("XPath and CSS selector for input field"),
+			mcp.Description("CSS selector for input field"),
 			mcp.Required(),
 		),
 		mcp.WithString("value",
@@ -162,7 +173,7 @@ func (bs *BrowserServer) Init() error {
 		"browser_select",
 		mcp.WithDescription("Select an element on the page with Select tag"),
 		mcp.WithString("selector",
-			mcp.Description("XPath and CSS selector for element to select"),
+			mcp.Description("CSS selector for element to select"),
 			mcp.Required(),
 		),
 		mcp.WithString("value",
@@ -174,7 +185,7 @@ func (bs *BrowserServer) Init() error {
 		"browser_hover",
 		mcp.WithDescription("Hover an element on the page"),
 		mcp.WithString("selector",
-			mcp.Description("XPath and CSS selector for element to hover"),
+			mcp.Description("CSS selector for element to hover"),
 			mcp.Required(),
 		),
 	), bs.handleHover)
@@ -216,6 +227,22 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 		return fmt.Errorf("failed to create user data directory: %v", err)
 	}
 	return nil
+}
+
+func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+	// 处理浏览器提示
+	return &mcp.GetPromptResult{
+		Description: fmt.Sprintf(""),
+		Messages: []mcp.PromptMessage{
+			{
+				Role: mcp.RoleUser,
+				Content: mcp.TextContent{
+					Type: "text",
+					Text: fmt.Sprintf(""),
+				},
+			},
+		},
+	}, nil
 }
 
 // handleNavigate handles the navigation action.
@@ -272,8 +299,11 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 	if !ok {
 		return bs.CallToolResultErr(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
-	err := chromedp.Run(bs.ctx,
-		chromedp.WaitVisible(selector, chromedp.BySearch),
+	execCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	defer cancelFunc()
+	err := chromedp.Run(execCtx,
+		chromedp.WaitReady("body", chromedp.ByQuery), // 等待页面就绪
+		chromedp.WaitVisible(selector, chromedp.ByQuery),
 		chromedp.Click(selector, chromedp.NodeVisible),
 	)
 	if err != nil {
@@ -288,13 +318,14 @@ func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolReq
 	if !ok {
 		return bs.CallToolResultErr(fmt.Sprintf("failed to fill selector:%v", request.Params.Arguments["selector"])), nil
 	}
-	// filter selector value, make sure it is a string with `//` TODO ?
 
 	value, ok := request.Params.Arguments["value"].(string)
 	if !ok {
 		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v, selector:%v", request.Params.Arguments["value"], selector)), nil
 	}
-	err := chromedp.Run(bs.ctx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
+	execCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	defer cancelFunc()
+	err := chromedp.Run(execCtx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
 	if err != nil {
 		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v", err)), nil
 	}
