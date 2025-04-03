@@ -3,15 +3,15 @@ module github.com/gojue/moling
 go 1.24.1
 
 require (
-	github.com/chromedp/chromedp v0.13.3
-	github.com/mark3labs/mcp-go v0.17.0
+	github.com/chromedp/chromedp v0.13.6
+	github.com/mark3labs/mcp-go v0.18.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 )
 
 require (
-	github.com/chromedp/cdproto v0.0.0-20250319231242-a755498943c8 // indirect
+	github.com/chromedp/cdproto v0.0.0-20250403032234-65de8f5d025b // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250223041408-d3c622f1b874 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
