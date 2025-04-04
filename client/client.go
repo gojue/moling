@@ -72,7 +72,7 @@ func NewManager(lger zerolog.Logger, mcpConfig MCPServerConfig) (cm *Manager) {
 		logger:    lger,
 		mcpConfig: mcpConfig,
 	}
-	cm.clients = clientLists // TODO 参数化
+	cm.clients = clientLists
 	return cm
 }
 

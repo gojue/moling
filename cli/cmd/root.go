@@ -36,8 +36,8 @@ const (
 	CliName            = "moling"
 	CliNameZh          = "魔灵"
 	MCPServerName      = "MoLing MCP Server"
-	CliDescription     = "A local office automation magic assistant, MoLing can help you perform file viewing, reading, and other related tasks, as well as assist with command-line operations."
-	CliDescriptionZh   = "本地办公自动化魔法助手，可以帮你实现文件查看、阅读等操作，也可以帮你执行命令行操作。"
+	CliDescription     = "MoLing is a computer-use and browser-use based MCP server. It is a locally deployed, dependency-free office AI assistant."
+	CliDescriptionZh   = "MoLing（魔灵）是一款基于computer-use和浏browser-use的 MCP 服务器，它是一个本地部署、无依赖的办公 AI 助手。"
 	CliHomepage        = "https://gojue.cc/moling"
 	CliAuthor          = "CFC4N <cfc4ncs@gmail.com>"
 	CliGithubRepo      = "https://github.com/gojue/moling"
@@ -53,7 +53,7 @@ Usage:
   moling client -i
   moling config 
 `
-	CliDescriptionLongZh = `MoLing（魔灵） 是一个computer-use的MCP Server，基于操作系统API实现了系统交互，可以实现文件系统的读写、合并、统计、聚合等操作，也可以执行系统命令操作。是一个无需任何依赖的本地办公自动化助手。
+	CliDescriptionLongZh = `MoLing（魔灵）是一个computer-use的MCP Server，基于操作系统API实现了系统交互，可以实现文件系统的读写、合并、统计、聚合等操作，也可以执行系统命令操作。是一个无需任何依赖的本地办公自动化助手。
 没有任何安装依赖，直接运行，兼容Windows、Linux、macOS等操作系统。再也不用苦恼NodeJS、Python等环境冲突等问题。
 
 Usage:
