@@ -93,7 +93,7 @@ func (c *Manager) ListClient() {
 // SetupConfig sets up the configuration for the clients.
 func (c *Manager) SetupConfig() {
 	for name, path := range c.clients {
-		c.logger.Info().Msgf("Client %s: %s", name, path)
+		c.logger.Debug().Msgf("Client %s: %s", name, path)
 		if !c.checkExist(path) {
 			continue
 		}
@@ -116,6 +116,7 @@ func (c *Manager) SetupConfig() {
 			c.logger.Error().Str("Client Name", name).Msgf("Failed to write config file %s: %s", path, err)
 			continue
 		}
+		c.logger.Info().Str("Client Name", name).Msgf("Successfully added config to %s", path)
 	}
 	return
 }

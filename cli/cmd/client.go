@@ -51,11 +51,11 @@ func ClientCommandFunc(command *cobra.Command, args []string) error {
 	multi := zerolog.MultiLevelWriter(consoleWriter, logger)
 	logger = zerolog.New(multi).With().Timestamp().Logger()
 	mlConfig.SetLogger(logger)
-	logger.Info().Msg("Start to show MCP Clients")
+	logger.Debug().Msg("Start to show MCP Clients")
 	mcpConfig := client.NewMCPServerConfig(CliDescription, CliName, MCPServerName)
 	exePath, err := os.Executable()
 	if err == nil {
-		logger.Info().Str("exePath", exePath).Msg("executable path, will use this path to find the config file")
+		logger.Warn().Str("exePath", exePath).Msg("executable path, will use this path to find the config file")
 		mcpConfig.Command = exePath
 	}
 	cm := client.NewManager(logger, mcpConfig)
