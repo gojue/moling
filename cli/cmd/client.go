@@ -55,7 +55,7 @@ func ClientCommandFunc(command *cobra.Command, args []string) error {
 	mcpConfig := client.NewMCPServerConfig(CliDescription, CliName, MCPServerName)
 	exePath, err := os.Executable()
 	if err == nil {
-		logger.Warn().Str("exePath", exePath).Msg("executable path, will use this path to find the config file")
+		logger.Debug().Str("exePath", exePath).Msg("executable path, will use this path to find the config file")
 		mcpConfig.Command = exePath
 	}
 	cm := client.NewManager(logger, mcpConfig)
