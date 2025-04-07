@@ -47,7 +47,7 @@ MoLing is a computer-use and browser-use MCP Server that implements system inter
 MoLing in [Claude](https://claude.ai/)
 ![](./images/screenshot_claude.png)
 
-![](https://github.com/user-attachments/assets/229c4dd5-23b4-4b53-9e25-3eba8734b5b7)
+https://github.com/user-attachments/assets/229c4dd5-23b4-4b53-9e25-3eba8734b5b7
 
 #### Configuration Format
 
