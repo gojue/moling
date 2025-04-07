@@ -44,6 +44,9 @@ Move-Item -Path "moling\moling.exe" -Destination "$destination\moling.exe"
 $env:Path += ";$destination"
 [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Machine)
 
+# MCP Client configuration
+& "$destination\moling.exe" client --install
+
 # Clean up
 Remove-Item -Recurse -Force "moling"
 Remove-Item -Force $FILE_NAME
