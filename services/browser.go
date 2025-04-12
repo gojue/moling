@@ -337,16 +337,16 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 
 	err := chromedp.Run(bs.ctx, chromedp.Navigate(url))
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to navigate: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %v", err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Navigated to %s", url)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Navigated to %s", url)), nil
 }
 
 // handleScreenshot handles the screenshot action.
 func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name, ok := request.Params.Arguments["name"].(string)
 	if !ok {
-		return bs.CallToolResultErr("name must be a string"), nil
+		return mcp.NewToolResultError("name must be a string"), nil
 	}
 	selector, _ := request.Params.Arguments["selector"].(string)
 	width, _ := request.Params.Arguments["width"].(int)
@@ -367,22 +367,22 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 		err = chromedp.Run(bs.ctx, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible))
 	}
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to take screenshot: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %v", err)), nil
 	}
 
 	newName := filepath.Join(bs.config.DataPath, fmt.Sprintf("%s_%d.png", strings.TrimRight(name, ".png"), rand.Int()))
 	err = os.WriteFile(newName, buf, 0644)
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to save screenshot: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to save screenshot: %v", err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Screenshot saved to:%s", newName)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Screenshot saved to:%s", newName)), nil
 }
 
 // handleClick handles the click action on a specified element.
 func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("selector must be a string:%v", selector)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
@@ -392,79 +392,79 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 		chromedp.Click(selector, chromedp.NodeVisible),
 	)
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Errorf("failed to click element: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to click element: %v", err).Error()), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Clicked element %s", selector)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Clicked element %s", selector)), nil
 }
 
 // handleFill handles the fill action on a specified input field.
 func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to fill selector:%v", request.Params.Arguments["selector"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill selector:%v", request.Params.Arguments["selector"])), nil
 	}
 
 	value, ok := request.Params.Arguments["value"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v, selector:%v", request.Params.Arguments["value"], selector)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v, selector:%v", request.Params.Arguments["value"], selector)), nil
 	}
 
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to fill input field: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v", err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Filled input %s with value %s", selector, value)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Filled input %s with value %s", selector, value)), nil
 }
 
 func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to select selector:%v", request.Params.Arguments["selector"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to select selector:%v", request.Params.Arguments["selector"])), nil
 	}
 	value, ok := request.Params.Arguments["value"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to select value:%v", request.Params.Arguments["value"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to select value:%v", request.Params.Arguments["value"])), nil
 	}
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SetValue(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Errorf("failed to select value: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to select value: %v", err).Error()), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Selected value %s for element %s", value, selector)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Selected value %s for element %s", value, selector)), nil
 }
 
 // handleHover handles the hover action on a specified element.
 func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	selector, ok := request.Params.Arguments["selector"].(string)
 	if !ok {
-		return bs.CallToolResultErr(fmt.Sprintf("selector must be a string:%v", selector)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
 	var res bool
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Errorf("failed to hover over element: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %v", err).Error()), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
 }
 
 func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	script, ok := request.Params.Arguments["script"].(string)
 	if !ok {
-		return bs.CallToolResultErr("script must be a string"), nil
+		return mcp.NewToolResultError("script must be a string"), nil
 	}
 	var result interface{}
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(script, &result))
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Errorf("failed to execute script: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to execute script: %v", err).Error()), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Script executed successfully: %v", result)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Script executed successfully: %v", result)), nil
 }
 
 func (bs *BrowserServer) Close() error {

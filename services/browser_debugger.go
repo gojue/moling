@@ -31,7 +31,7 @@ import (
 func (bs *BrowserServer) handleDebugEnable(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	enabled, ok := request.Params.Arguments["enabled"].(bool)
 	if !ok {
-		return bs.CallToolResultErr("enabled must be a boolean"), nil
+		return mcp.NewToolResultError("enabled must be a boolean"), nil
 	}
 
 	var err error
@@ -55,10 +55,10 @@ func (bs *BrowserServer) handleDebugEnable(ctx context.Context, request mcp.Call
 	}
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to %s debugging: %v",
+		return mcp.NewToolResultError(fmt.Sprintf("failed to %s debugging: %v",
 			map[bool]string{true: "enable", false: "disable"}[enabled], err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Debugging %s",
+	return mcp.NewToolResultText(fmt.Sprintf("Debugging %s",
 		map[bool]string{true: "enabled", false: "disabled"}[enabled])), nil
 }
 
@@ -66,12 +66,12 @@ func (bs *BrowserServer) handleDebugEnable(ctx context.Context, request mcp.Call
 func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	url, ok := request.Params.Arguments["url"].(string)
 	if !ok {
-		return bs.CallToolResultErr("url must be a string"), nil
+		return mcp.NewToolResultError("url must be a string"), nil
 	}
 
 	line, ok := request.Params.Arguments["line"].(float64)
 	if !ok {
-		return bs.CallToolResultErr("line must be a number"), nil
+		return mcp.NewToolResultError("line must be a number"), nil
 	}
 
 	column, _ := request.Params.Arguments["column"].(float64)
@@ -104,16 +104,16 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 	}))
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to set breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to set breakpoint: %v", err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Breakpoint set with ID: %s", breakpointID)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint set with ID: %s", breakpointID)), nil
 }
 
 // handleRemoveBreakpoint handles removing a breakpoint in the browser.
 func (bs *BrowserServer) handleRemoveBreakpoint(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	breakpointID, ok := request.Params.Arguments["breakpointId"].(string)
 	if !ok {
-		return bs.CallToolResultErr("breakpointId must be a string"), nil
+		return mcp.NewToolResultError("breakpointId must be a string"), nil
 	}
 	rctx, cancel := context.WithCancel(bs.ctx)
 	defer cancel()
@@ -126,9 +126,9 @@ func (bs *BrowserServer) handleRemoveBreakpoint(ctx context.Context, request mcp
 	}))
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to remove breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to remove breakpoint: %v", err)), nil
 	}
-	return bs.CallToolResult(fmt.Sprintf("Breakpoint %s removed", breakpointID)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint %s removed", breakpointID)), nil
 }
 
 // handlePause handles pausing the JavaScript execution in the browser.
@@ -142,9 +142,9 @@ func (bs *BrowserServer) handlePause(ctx context.Context, request mcp.CallToolRe
 	}))
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to pause execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to pause execution: %v", err)), nil
 	}
-	return bs.CallToolResult("JavaScript execution paused"), nil
+	return mcp.NewToolResultText("JavaScript execution paused"), nil
 }
 
 // handleResume handles resuming the JavaScript execution in the browser.
@@ -158,9 +158,9 @@ func (bs *BrowserServer) handleResume(ctx context.Context, request mcp.CallToolR
 	}))
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to resume execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to resume execution: %v", err)), nil
 	}
-	return bs.CallToolResult("JavaScript execution resumed"), nil
+	return mcp.NewToolResultText("JavaScript execution resumed"), nil
 }
 
 // handleStepOver handles stepping over the next line of JavaScript code in the browser.
@@ -175,13 +175,13 @@ func (bs *BrowserServer) handleGetCallstack(ctx context.Context, request mcp.Cal
 	}))
 
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to get call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to get call stack: %v", err)), nil
 	}
 
 	callstackJSON, err := json.Marshal(callstack)
 	if err != nil {
-		return bs.CallToolResultErr(fmt.Sprintf("failed to marshal call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal call stack: %v", err)), nil
 	}
 
-	return bs.CallToolResult(fmt.Sprintf("Current call stack: %s", string(callstackJSON))), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Current call stack: %s", string(callstackJSON))), nil
 }
