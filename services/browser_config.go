@@ -33,7 +33,6 @@ type BrowserConfig struct {
 	SelectorQueryTimeout int    `json:"selector_query_timeout"` // SelectorQueryTimeout is the timeout for CSS selector queries. time.Second
 	DataPath             string `json:"data_path"`              // DataPath is the path to the data directory.
 	BrowserDataPath      string `json:"browser_data_path"`      // BrowserDataPath is the path to the browser data directory.
-	//logger          *zerolog.Logger
 }
 
 func (cfg *BrowserConfig) Check() error {

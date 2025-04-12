@@ -95,8 +95,7 @@ func (bs *BrowserServer) Init() error {
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("enable-automation", false),
 		chromedp.Flag("disable-features", "Translate"),
-		chromedp.Flag("headless", false),
-		// Like in Puppeteer.
+		chromedp.Flag("headless", bs.config.Headless),
 		chromedp.Flag("hide-scrollbars", false),
 		chromedp.Flag("mute-audio", true),
 		chromedp.Flag("disable-infobars", true),
@@ -196,6 +195,58 @@ func (bs *BrowserServer) Init() error {
 			mcp.Required(),
 		),
 	), bs.handleEvaluate)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_debug_enable",
+		mcp.WithDescription("Enable JavaScript debugging"),
+		mcp.WithBoolean("enabled",
+			mcp.Description("Enable or disable debugging"),
+			mcp.Required(),
+		),
+	), bs.handleDebugEnable)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_set_breakpoint",
+		mcp.WithDescription("Set a JavaScript breakpoint"),
+		mcp.WithString("url",
+			mcp.Description("URL of the script"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("line",
+			mcp.Description("Line number"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("column",
+			mcp.Description("Column number (optional)"),
+		),
+		mcp.WithString("condition",
+			mcp.Description("Breakpoint condition (optional)"),
+		),
+	), bs.handleSetBreakpoint)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_remove_breakpoint",
+		mcp.WithDescription("Remove a JavaScript breakpoint"),
+		mcp.WithString("breakpointId",
+			mcp.Description("Breakpoint ID to remove"),
+			mcp.Required(),
+		),
+	), bs.handleRemoveBreakpoint)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_pause",
+		mcp.WithDescription("Pause JavaScript execution"),
+	), bs.handlePause)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_resume",
+		mcp.WithDescription("Resume JavaScript execution"),
+	), bs.handleResume)
+
+	bs.AddTool(mcp.NewTool(
+		"browser_get_callstack",
+		mcp.WithDescription("Get current call stack when paused"),
+	), bs.handleGetCallstack)
 	return nil
 }
 
@@ -237,7 +288,40 @@ func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Role: mcp.RoleUser,
 				Content: mcp.TextContent{
 					Type: "text",
-					Text: fmt.Sprintf("You are an intelligent MCP Server that performs browser tasks, capable of web browsing, button clicking, form filling, and other tasks."),
+					Text: fmt.Sprintf(`
+You are an AI-powered browser automation assistant capable of performing a wide range of web interactions and debugging tasks. Your capabilities include:
+
+1. **Navigation**: Navigate to any specified URL to load web pages.
+
+2. **Screenshot Capture**: Take full-page screenshots or capture specific elements using CSS selectors, with customizable dimensions (default: 1700x1100 pixels).
+
+3. **Element Interaction**:
+   - Click on elements identified by CSS selectors
+   - Hover over specified elements
+   - Fill input fields with provided values
+   - Select options in dropdown menus
+
+4. **JavaScript Execution**:
+   - Run arbitrary JavaScript code in the browser context
+   - Evaluate scripts and return results
+
+5. **Debugging Tools**:
+   - Enable/disable JavaScript debugging mode
+   - Set breakpoints at specific script locations (URL + line number + optional column/condition)
+   - Remove existing breakpoints by ID
+   - Pause and resume script execution
+   - Retrieve current call stack when paused
+
+For all actions requiring element selection, you must use precise CSS selectors. When capturing screenshots, you can specify either the entire page or target specific elements. For debugging operations, you can precisely control execution flow and inspect runtime behavior.
+
+Please provide clear instructions including:
+- The specific action you want performed
+- Required parameters (URLs, selectors, values, etc.)
+- Any optional parameters (dimensions, conditions, etc.)
+- Expected outcomes where relevant
+
+You should confirm actions before execution when dealing with sensitive operations or destructive commands. Report back with clear status updates, success/failure indicators, and any relevant output or captured data.
+`),
 				},
 			},
 		},
@@ -388,7 +472,7 @@ func (bs *BrowserServer) Close() error {
 	bs.cancelAlloc()
 	bs.cancelChrome()
 	// Cancel the context to stop the browser
-	// chromedp.Cancel(bs.ctx)
+	chromedp.Cancel(bs.ctx)
 	return nil
 }
 
