@@ -1,0 +1,35 @@
+include variables.mk
+include functions.mk
+
+.PHONY: all build package clean
+
+# 定义目标系统和架构
+TARGET_SYSTEMS := darwin linux windows
+TARGET_ARCHS := amd64 arm64
+
+# 输出目录
+DIST_DIR := dist
+
+all: build
+
+# 遍历系统和架构，编译程序
+build:
+	@for os in $(TARGET_SYSTEMS); do \
+		for arch in $(TARGET_ARCHS); do \
+			echo "Building for $$os/$$arch..."; \
+			$(MAKE) TARGET_OS=$$os TARGET_ARCH=$$arch ; \
+			echo "Packaging for $$os/$$arch..."; \
+			OUT_DIR=moling\_$$os\_$$arch\_$(COMMIT); \
+			mkdir -p $(DIST_DIR)/$$OUT_DIR; \
+			cp bin/moling$$([ "$$os" = "windows" ] && echo ".exe") $(DIST_DIR)/$$OUT_DIR/; \
+			if [ "$$os" = "windows" ]; then \
+				(cd $(DIST_DIR) && zip -r $$OUT_DIR.zip $$OUT_DIR); \
+            else \
+				(cd $(DIST_DIR) && tar -czf $$OUT_DIR.tar.gz $$OUT_DIR); \
+            fi; \
+		done; \
+	done
+
+# 清理生成的文件
+clean:
+	$(CMD_RM) -rf bin/* $(DIST_DIR)/*
