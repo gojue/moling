@@ -472,7 +472,7 @@ func (bs *BrowserServer) Close() error {
 	bs.cancelAlloc()
 	bs.cancelChrome()
 	// Cancel the context to stop the browser
-	chromedp.Cancel(bs.ctx)
+	_ = chromedp.Cancel(bs.ctx)
 	return nil
 }
 

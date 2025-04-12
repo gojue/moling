@@ -95,7 +95,11 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 			return err
 		}
 
-		breakpointID = result["breakpointId"].(string)
+		breakpointID, ok = result["breakpointId"].(string)
+		if !ok {
+			breakpointID = ""
+			return fmt.Errorf("failed to get breakpoint ID")
+		}
 		return nil
 	}))
 
