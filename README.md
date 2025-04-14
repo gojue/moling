@@ -93,7 +93,7 @@ Code, etc.
 ### Operation Modes
 
 - **Stdio Mode**: CLI-based interactive mode for user-friendly experience
-- **SSR Mode**: Server-Side Rendering mode optimized for headless/automated environments
+- **SSE Mode**: Server-Side Rendering mode optimized for headless/automated environments
 
 ### Installation
 

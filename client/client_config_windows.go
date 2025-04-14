@@ -27,6 +27,10 @@ import (
 
 func init() {
 	clientLists["VSCODE Cline"] = filepath.Join(os.Getenv("APPDATA"), "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
+	clientLists["Trae CN Cline"] = filepath.Join(os.Getenv("APPDATA"), "Trae CN", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
+	clientLists["Trae Cline"] = filepath.Join(os.Getenv("APPDATA"), "Trae", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
 	clientLists["VSCODE Roo Code"] = filepath.Join(os.Getenv("APPDATA"), "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
+	clientLists["Trae CN Roo"] = filepath.Join(os.Getenv("APPDATA"), "Trae CN", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json")
+	clientLists["Trae Roo"] = filepath.Join(os.Getenv("APPDATA"), "Trae", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json")
 	clientLists["Claude"] = filepath.Join(os.Getenv("APPDATA"), "Claude", "claude_desktop_config.json")
 }
