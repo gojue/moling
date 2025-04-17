@@ -62,7 +62,7 @@ type Service interface {
 	MlConfig() *MoLingConfig
 
 	// Name returns the name of the service.
-	Name() string
+	Name() MoLingServerType
 
 	// Close closes the service and releases any resources it holds.
 	Close() error

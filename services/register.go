@@ -20,15 +20,15 @@ import (
 	"context"
 )
 
-var serviceLists = make(map[string]func(ctx context.Context) (Service, error))
+var serviceLists = make(map[MoLingServerType]func(ctx context.Context) (Service, error))
 
 // RegisterServ register service
-func RegisterServ(n string, f func(ctx context.Context) (Service, error)) {
+func RegisterServ(n MoLingServerType, f func(ctx context.Context) (Service, error)) {
 	//serviceLists = append(, f)
 	serviceLists[n] = f
 }
 
 // ServiceList  get service lists
-func ServiceList() map[string]func(ctx context.Context) (Service, error) {
+func ServiceList() map[MoLingServerType]func(ctx context.Context) (Service, error) {
 	return serviceLists
 }

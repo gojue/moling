@@ -31,6 +31,8 @@ import (
 	"time"
 )
 
+type MoLingServerType string // MoLingServerType is the type of the server
+
 type MoLingServer struct {
 	ctx        context.Context
 	server     *server.MCPServer
@@ -64,10 +66,10 @@ func NewMoLingServer(ctx context.Context, srvs []Service, mlConfig MoLingConfig)
 func (m *MoLingServer) init() error {
 	var err error
 	for _, srv := range m.services {
-		m.logger.Debug().Str("serviceName", srv.Name()).Msg("Loading service")
+		m.logger.Debug().Str("serviceName", string(srv.Name())).Msg("Loading service")
 		err = m.loadService(srv)
 		if err != nil {
-			m.logger.Info().Err(err).Str("serviceName", srv.Name()).Msg("Failed to load service")
+			m.logger.Info().Err(err).Str("serviceName", string(srv.Name())).Msg("Failed to load service")
 		}
 	}
 	return err

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chromedp/chromedp"
+	"github.com/gojue/moling/utils"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/rs/zerolog"
 	"math/rand"
@@ -32,8 +33,8 @@ import (
 )
 
 const (
-	BrowserServerName = "BrowserServer"
-	BrowserDataPath   = "browser" // Path to store browser data
+	BrowserServerName MoLingServerType = "Browser"
+	BrowserDataPath                    = "browser" // Path to store browser data
 )
 
 // BrowserServer represents the configuration for the browser service.
@@ -56,7 +57,7 @@ func NewBrowserServer(ctx context.Context) (Service, error) {
 		return nil, fmt.Errorf("BrowserServer: invalid logger type: %T", ctx.Value(MoLingLoggerKey))
 	}
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", BrowserServerName)
+		e.Str("Service", string(BrowserServerName))
 	})
 	bs := &BrowserServer{
 		MLService: NewMLService(ctx, logger.Hook(loggerNameHook), globalConf),
@@ -73,16 +74,16 @@ func NewBrowserServer(ctx context.Context) (Service, error) {
 
 // Init initializes the browser server by creating a new context.
 func (bs *BrowserServer) Init() error {
-	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", bs.Name())
-	})
+	//loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
+	//	e.Str("Service", string(bs.Name()))
+	//})
 
-	bs.logger = bs.logger.Hook(loggerNameHook)
+	//bs.logger = bs.logger.Hook(loggerNameHook)
 	err := bs.initBrowser(bs.config.BrowserDataPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize browser: %v", err)
 	}
-	err = CreateDirectory(bs.config.DataPath)
+	err = utils.CreateDirectory(bs.config.DataPath)
 	if err != nil {
 		return fmt.Errorf("failed to create data directory: %v", err)
 	}
@@ -116,7 +117,7 @@ func (bs *BrowserServer) Init() error {
 	pe := PromptEntry{
 		prompt: mcp.Prompt{
 			Name:        "browser_prompt",
-			Description: fmt.Sprintf("Get the relevant functions and prompts of the current MCP Server."),
+			Description: fmt.Sprintf("Get the relevant functions and prompts of the Browser MCP Server."),
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
 		phf: bs.handlePrompt,
@@ -486,7 +487,7 @@ func (bs *BrowserServer) Config() string {
 	return string(cfg)
 }
 
-func (bs *BrowserServer) Name() string {
+func (bs *BrowserServer) Name() MoLingServerType {
 	return BrowserServerName
 }
 

@@ -38,7 +38,7 @@ const (
 	MaxBase64Size = 1024 * 1024 * 1
 )
 const (
-	FilesystemServerName = "FilesystemServer"
+	FilesystemServerName MoLingServerType = "FileSystem"
 )
 
 type FileInfo struct {
@@ -70,7 +70,7 @@ func NewFilesystemServer(ctx context.Context) (Service, error) {
 	}
 
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", FilesystemServerName)
+		e.Str("Service", string(FilesystemServerName))
 	})
 
 	fs := &FilesystemServer{
@@ -91,6 +91,15 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddResource(mcp.NewResource("file://", "File System",
 		mcp.WithResourceDescription("Access to files and directories on the local file system"),
 	), fs.handleReadResource)
+
+	pe := PromptEntry{
+		prompt: mcp.Prompt{
+			Name:        "filesystem_prompt",
+			Description: fmt.Sprintf("Get the relevant functions and prompts of the FileSystem MCP Server."),
+		},
+		phf: fs.handlePrompt,
+	}
+	fs.AddPrompt(pe)
 
 	// Register tool handlers
 	fs.AddTool(mcp.NewTool("read_file",
@@ -174,8 +183,55 @@ func (fs *FilesystemServer) Init() error {
 	return nil
 }
 
+// handlePrompt handles the prompt request for the FilesystemServer
+func (fs *FilesystemServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+	return &mcp.GetPromptResult{
+		Description: fmt.Sprintf(""),
+		Messages: []mcp.PromptMessage{
+			{
+				Role: mcp.RoleUser,
+				Content: mcp.TextContent{
+					Type: "text",
+					Text: fmt.Sprintf(`
+You are a powerful local filesystem management assistant capable of performing various file operations and management tasks. Your capabilities include:
+
+1. **File Browsing**: Navigate to specified directories to load lists of files and folders.
+
+2. **File Operations**:
+   - Create new files or folders
+   - Delete specified files or folders
+   - Copy and move files and folders
+   - Rename files or folders
+
+3. **File Content Operations**:
+   - Read the contents of text files and return them
+   - Write text to specified files
+   - Append content to existing files
+
+4. **File Information Retrieval**:
+   - Retrieve properties of files or folders (e.g., size, creation date, modification date)
+   - Check if files or folders exist
+
+5. **Search Functionality**:
+   - Search for files in specified directories, supporting wildcard matching
+   - Filter search results by file type or modification date
+
+For all actions, please provide clear instructions, including:
+- The specific action you want to perform
+- Required parameters (directory paths, filenames, content, etc.)
+- Any optional parameters (e.g., new filenames, search patterns, etc.)
+- Relevant expected outcomes
+
+You should confirm actions before execution when dealing with sensitive operations or destructive commands. Report back with clear status updates, success/failure indicators, and any relevant output or results.
+`),
+				},
+			},
+		},
+	}, nil
+}
+
 // isPathInAllowedDirs checks if a path is within any of the allowed directories
-func (fss *FilesystemServer) isPathInAllowedDirs(path string) bool {
+func (fs *FilesystemServer) isPathInAllowedDirs(path string) bool {
 	// Ensure path is absolute and clean
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -194,7 +250,7 @@ func (fss *FilesystemServer) isPathInAllowedDirs(path string) bool {
 	}
 
 	// Check if the path is within any of the allowed directories
-	for _, dir := range fss.config.allowedDirs {
+	for _, dir := range fs.config.allowedDirs {
 		if strings.HasPrefix(absPath, dir) {
 			return true
 		}
@@ -202,11 +258,11 @@ func (fss *FilesystemServer) isPathInAllowedDirs(path string) bool {
 	return false
 }
 
-func (fss *FilesystemServer) validatePath(requestedPath string) (string, error) {
+func (fs *FilesystemServer) validatePath(requestedPath string) (string, error) {
 	// Always convert to absolute path first
 	var hasPrefix bool
 	var firstDir string
-	for _, dir := range fss.config.allowedDirs {
+	for _, dir := range fs.config.allowedDirs {
 		if firstDir == "" {
 			firstDir = dir
 		}
@@ -224,7 +280,7 @@ func (fss *FilesystemServer) validatePath(requestedPath string) (string, error) 
 	}
 
 	// Check if path is within allowed directories
-	if !fss.isPathInAllowedDirs(abs) {
+	if !fs.isPathInAllowedDirs(abs) {
 		return "", fmt.Errorf("access denied - path outside allowed directories: %s", abs)
 	}
 
@@ -241,7 +297,7 @@ func (fss *FilesystemServer) validatePath(requestedPath string) (string, error) 
 			return "", fmt.Errorf("parent directory does not exist: %s", parent)
 		}
 
-		if !fss.isPathInAllowedDirs(realParent) {
+		if !fs.isPathInAllowedDirs(realParent) {
 			return "", fmt.Errorf(
 				"access denied - parent directory outside allowed directories",
 			)
@@ -250,7 +306,7 @@ func (fss *FilesystemServer) validatePath(requestedPath string) (string, error) 
 	}
 
 	// Check if the real path (after resolving symlinks) is still within allowed directories
-	if !fss.isPathInAllowedDirs(realPath) {
+	if !fs.isPathInAllowedDirs(realPath) {
 		return "", fmt.Errorf(
 			"access denied - symlink target outside allowed directories",
 		)
@@ -259,7 +315,7 @@ func (fss *FilesystemServer) validatePath(requestedPath string) (string, error) 
 	return realPath, nil
 }
 
-func (fss *FilesystemServer) getFileStats(path string) (FileInfo, error) {
+func (fs *FilesystemServer) getFileStats(path string) (FileInfo, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return FileInfo{}, err
@@ -276,7 +332,7 @@ func (fss *FilesystemServer) getFileStats(path string) (FileInfo, error) {
 	}, nil
 }
 
-func (fss *FilesystemServer) searchFiles(rootPath, pattern string) ([]string, error) {
+func (fs *FilesystemServer) searchFiles(rootPath, pattern string) ([]string, error) {
 	var results []string
 	pattern = strings.ToLower(pattern)
 
@@ -288,7 +344,7 @@ func (fss *FilesystemServer) searchFiles(rootPath, pattern string) ([]string, er
 			}
 
 			// Try to validate path
-			if _, err := fss.validatePath(path); err != nil {
+			if _, err := fs.validatePath(path); err != nil {
 				return nil // Skip invalid paths
 			}
 
@@ -305,9 +361,9 @@ func (fss *FilesystemServer) searchFiles(rootPath, pattern string) ([]string, er
 }
 
 // Resource handler
-func (fss *FilesystemServer) handleReadResource(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (fs *FilesystemServer) handleReadResource(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	uri := request.Params.URI
-	fss.logger.Debug().Str("uri", uri).Msg("handleReadResource")
+	fs.logger.Debug().Str("uri", uri).Msg("handleReadResource")
 
 	// Check if it'fss a file:// URI
 	if !strings.HasPrefix(uri, "file://") {
@@ -318,7 +374,7 @@ func (fss *FilesystemServer) handleReadResource(ctx context.Context, request mcp
 	path := strings.TrimPrefix(uri, "file://")
 
 	// Validate the path
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +478,7 @@ func (fss *FilesystemServer) handleReadResource(ctx context.Context, request mcp
 
 // Tool handlers
 
-func (fss *FilesystemServer) handleReadFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleReadFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
@@ -430,7 +486,7 @@ func (fss *FilesystemServer) handleReadFile(ctx context.Context, request mcp.Cal
 
 	// 判断 前缀是不是已经包含了
 	//path = filepath.Join(fss.config.CachePath, path)
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("validate Path Error: %v", err)), nil
 	}
@@ -577,7 +633,7 @@ func (fss *FilesystemServer) handleReadFile(ctx context.Context, request mcp.Cal
 	}
 }
 
-func (fss *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
@@ -589,7 +645,7 @@ func (fss *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.Ca
 
 	//path = filepath.Join(fss.config.CachePath, path)
 
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
@@ -643,13 +699,13 @@ func (fss *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.Ca
 	}, nil
 }
 
-func (fss *FilesystemServer) handleListDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleListDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
 	}
 
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("validate path error: %v, path:%s", err, validPath)), nil
 	}
@@ -709,13 +765,13 @@ func (fss *FilesystemServer) handleListDirectory(ctx context.Context, request mc
 	}, nil
 }
 
-func (fss *FilesystemServer) handleCreateDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleCreateDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("path must be a string"), nil
 	}
 
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error: %v", err)), nil
 	}
@@ -767,7 +823,7 @@ func (fss *FilesystemServer) handleCreateDirectory(ctx context.Context, request 
 	}, nil
 }
 
-func (fss *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	source, ok := request.Params.Arguments["source"].(string)
 	if !ok {
 		return mcp.NewToolResultError("source must be a string"), nil
@@ -777,7 +833,7 @@ func (fss *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.Cal
 		return mcp.NewToolResultError("destination must be a string"), nil
 	}
 
-	validSource, err := fss.validatePath(source)
+	validSource, err := fs.validatePath(source)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error with source path: %v", err)), nil
 	}
@@ -787,7 +843,7 @@ func (fss *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.Cal
 		return mcp.NewToolResultError(fmt.Sprintf("Error: Source does not exist: %s", source)), nil
 	}
 
-	validDest, err := fss.validatePath(destination)
+	validDest, err := fs.validatePath(destination)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error with destination path: %v", err)), nil
 	}
@@ -825,7 +881,7 @@ func (fss *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.Cal
 	}, nil
 }
 
-func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("path must be a string"), nil
@@ -835,7 +891,7 @@ func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.
 		return mcp.NewToolResultError("pattern must be a string"), nil
 	}
 
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error: %v", err)), nil
 	}
@@ -850,7 +906,7 @@ func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.
 		return mcp.NewToolResultError("Error: Search path must be a directory"), nil
 	}
 
-	results, err := fss.searchFiles(validPath, pattern)
+	results, err := fs.searchFiles(validPath, pattern)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error searching files: %v", err)), nil
 	}
@@ -881,13 +937,13 @@ func (fss *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.
 	return mcp.NewToolResultText(formattedResults.String()), nil
 }
 
-func (fss *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	path, ok := request.Params.Arguments["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError(fmt.Errorf("path %v must be a string", request.Params.Arguments["path"]).Error()), nil
 	}
 
-	validPath, err := fss.validatePath(path)
+	validPath, err := fs.validatePath(path)
 	if err != nil {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
@@ -900,7 +956,7 @@ func (fss *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.
 		}, nil
 	}
 
-	info, err := fss.getFileStats(validPath)
+	info, err := fs.getFileStats(validPath)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Error getting file info: %v", err)), nil
 	}
@@ -955,10 +1011,10 @@ func (fss *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.
 	}, nil
 }
 
-func (fss *FilesystemServer) handleListAllowedDirectories(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (fs *FilesystemServer) handleListAllowedDirectories(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Remove the trailing separator for display purposes
-	displayDirs := make([]string, len(fss.config.allowedDirs))
-	for i, dir := range fss.config.allowedDirs {
+	displayDirs := make([]string, len(fs.config.allowedDirs))
+	for i, dir := range fs.config.allowedDirs {
 		displayDirs[i] = strings.TrimSuffix(dir, string(filepath.Separator))
 	}
 
@@ -974,34 +1030,34 @@ func (fss *FilesystemServer) handleListAllowedDirectories(ctx context.Context, r
 }
 
 // Config returns the configuration of the service as a string.
-func (fss *FilesystemServer) Config() string {
-	fss.config.AllowedDir = strings.Join(fss.config.allowedDirs, ",")
-	cfg, err := json.Marshal(fss.config)
+func (fs *FilesystemServer) Config() string {
+	fs.config.AllowedDir = strings.Join(fs.config.allowedDirs, ",")
+	cfg, err := json.Marshal(fs.config)
 	if err != nil {
-		fss.logger.Err(err).Msg("failed to marshal config")
+		fs.logger.Err(err).Msg("failed to marshal config")
 		return "{}"
 	}
 	return string(cfg)
 }
 
-func (fss *FilesystemServer) Name() string {
+func (fs *FilesystemServer) Name() MoLingServerType {
 	return FilesystemServerName
 }
 
-func (fss *FilesystemServer) Close() error {
+func (fs *FilesystemServer) Close() error {
 	// Cancel the context to stop the browser
-	fss.logger.Debug().Msg("closing FilesystemServer")
+	fs.logger.Debug().Msg("closing FilesystemServer")
 	return nil
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (fss *FilesystemServer) LoadConfig(jsonData map[string]interface{}) error {
-	err := mergeJSONToStruct(fss.config, jsonData)
+func (fs *FilesystemServer) LoadConfig(jsonData map[string]interface{}) error {
+	err := mergeJSONToStruct(fs.config, jsonData)
 	if err != nil {
 		return err
 	}
-	fss.config.allowedDirs = strings.Split(fss.config.AllowedDir, ",")
-	return fss.config.Check()
+	fs.config.allowedDirs = strings.Split(fs.config.AllowedDir, ",")
+	return fs.config.Check()
 }
 
 func init() {

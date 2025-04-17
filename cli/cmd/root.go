@@ -180,7 +180,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	var srvs []services.Service
 	var closers = make(map[string]func() error)
 	for srvName, nsv := range services.ServiceList() {
-		cfg, ok := nowConfigJson[srvName].(map[string]interface{})
+		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
 		srv, err := nsv(ctxNew)
 		if err != nil {
 			loger.Error().Err(err).Msgf("failed to create service %s", srv.Name())
@@ -199,7 +199,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 			break
 		}
 		srvs = append(srvs, srv)
-		closers[srv.Name()] = srv.Close
+		closers[string(srv.Name())] = srv.Close
 	}
 	// MCPServer
 	srv, err := services.NewMoLingServer(ctxNew, srvs, *mlConfig)

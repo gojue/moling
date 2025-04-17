@@ -81,7 +81,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	first := true
 	for srvName, nsv := range services.ServiceList() {
 		// 获取服务对应的配置
-		cfg, ok := nowConfigJson[srvName].(map[string]interface{})
+		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
 
 		srv, err := nsv(ctx)
 		if err != nil {
@@ -94,7 +94,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 				return fmt.Errorf("Error loading config for service %s: %v\n", srv.Name(), err)
 			}
 		} else {
-			logger.Debug().Str("service", srv.Name()).Msg("Service not found in config, using default config")
+			logger.Debug().Str("service", string(srv.Name())).Msg("Service not found in config, using default config")
 		}
 		// srv Init
 		err = srv.Init()

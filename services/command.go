@@ -35,7 +35,7 @@ var (
 )
 
 const (
-	CommandServerName = "CommandServer"
+	CommandServerName MoLingServerType = "Command"
 )
 
 // CommandServer implements the Service interface and provides methods to execute named commands.
@@ -61,7 +61,7 @@ func NewCommandServer(ctx context.Context) (Service, error) {
 	}
 
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-		e.Str("Service", CommandServerName)
+		e.Str("Service", string(CommandServerName))
 	})
 
 	cs := &CommandServer{
@@ -82,7 +82,7 @@ func (cs *CommandServer) Init() error {
 	pe := PromptEntry{
 		prompt: mcp.Prompt{
 			Name:        "command_prompt",
-			Description: fmt.Sprintf("You are a command-line tool assistant, using %s system commands to help users troubleshoot network issues, system performance, file searching, and statistics, among other things.", cs.MlConfig().SystemInfo),
+			Description: fmt.Sprintf("get command prompt"),
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
 		phf: cs.handlePrompt,
@@ -107,7 +107,45 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Role: mcp.RoleUser,
 				Content: mcp.TextContent{
 					Type: "text",
-					Text: fmt.Sprintf(""),
+					Text: fmt.Sprintf(`
+You are a powerful terminal command assistant capable of executing various command-line on {%system_os%} operations and management tasks. Your capabilities include:
+
+1. **File and Directory Management**:
+    - List files and subdirectories in a directory
+    - Create new files or directories
+    - Delete specified files or directories
+    - Copy and move files and directories
+    - Rename files or directories
+
+2. **File Content Operations**:
+    - View the contents of text files
+    - Edit file contents
+    - Redirect output to a file
+    - Search file contents
+
+3. **System Information Retrieval**:
+    - Retrieve system information (e.g., CPU usage, memory usage, etc.)
+    - View the current user and their permissions
+    - Check the current working directory
+
+4. **Network Operations**:
+    - Check network connection status (e.g., using the ping command)
+    - Query domain information (e.g., using the whois command)
+    - Manage network services (e.g., start, stop, and restart services)
+
+5. **Process Management**:
+    - List currently running processes
+    - Terminate specified processes
+    - Adjust process priorities
+
+Before executing any actions, please provide clear instructions, including:
+- The specific command you want to execute
+- Required parameters (file paths, directory names, etc.)
+- Any optional parameters (e.g., modification options, output formats, etc.)
+- Relevant expected results or output
+
+When dealing with sensitive operations or destructive commands, please confirm before execution. Report back with clear status updates, success/failure indicators, and any relevant output or results.
+`, cs.MlConfig().SystemInfo),
 				},
 			},
 		},
@@ -183,7 +221,7 @@ func (cs *CommandServer) Config() string {
 	return string(cfg)
 }
 
-func (cs *CommandServer) Name() string {
+func (cs *CommandServer) Name() MoLingServerType {
 	return CommandServerName
 }
 
