@@ -35,4 +35,5 @@ func init() {
 	clientLists["Trae CN Roo"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae CN", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
 	clientLists["Trae Roo"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
 	clientLists["Claude"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Claude", "claude_desktop_config.json")
+	clientLists["Cursor"] = filepath.Join(os.Getenv("HOME"), ".cursor", "mcp.json")
 }
