@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	BrowserServerName MoLingServerType = "Browser"
 	BrowserDataPath                    = "browser" // Path to store browser data
+	BrowserServerName MoLingServerType = "Browser"
 )
 
 // BrowserServer represents the configuration for the browser service.

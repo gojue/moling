@@ -21,6 +21,7 @@
 package services
 
 import (
+	"github.com/gojue/moling/utils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,12 +39,12 @@ func TestNewMLServer(t *testing.T) {
 		"data",    // data
 		"cache",
 	}
-	err := CreateDirectory(mlConfig.BasePath)
+	err := utils.CreateDirectory(mlConfig.BasePath)
 	if err != nil {
 		t.Errorf("Failed to create base directory: %v", err)
 	}
 	for _, dirName := range mlDirectories {
-		err = CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
+		err = utils.CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
 		if err != nil {
 			t.Errorf("Failed to create directory %s: %v", dirName, err)
 		}

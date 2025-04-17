@@ -108,7 +108,7 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Content: mcp.TextContent{
 					Type: "text",
 					Text: fmt.Sprintf(`
-You are a powerful terminal command assistant capable of executing various command-line on {%system_os%} operations and management tasks. Your capabilities include:
+You are a powerful terminal command assistant capable of executing various command-line on %s operations and management tasks. Your capabilities include:
 
 1. **File and Directory Management**:
     - List files and subdirectories in a directory
