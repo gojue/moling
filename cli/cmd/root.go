@@ -29,7 +29,9 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"sync"
 	"syscall"
+	"time"
 )
 
 const (
@@ -67,7 +69,8 @@ Usage:
 
 const (
 	MLConfigName = "config.json"     // config file name of MoLing Server
-	MLROOTPATH   = ".moling"         // config file name of MoLing Server
+	MLRootPath   = ".moling"         // config file name of MoLing Server
+	MLPidName    = "moling.pid"      // pid file name
 	LogFileName  = "moling.log"      //	log file name
 	MaxLogSize   = 1024 * 1024 * 512 // 512MB
 )
@@ -77,7 +80,7 @@ var (
 	mlConfig   = &services.MoLingConfig{
 		Version:    GitVersion,
 		ConfigFile: filepath.Join("config", MLConfigName),
-		BasePath:   filepath.Join(os.TempDir(), MLROOTPATH), // will set in mlsCommandPreFunc
+		BasePath:   filepath.Join(os.TempDir(), MLRootPath), // will set in mlsCommandPreFunc
 	}
 
 	// mlDirectories is a list of directories to be created in the base path
@@ -164,6 +167,15 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	var err error
 	var nowConfig []byte
 	var nowConfigJson map[string]interface{}
+
+	// 增加实例重复运行检测
+	pidFilePath := filepath.Join(mlConfig.BasePath, MLPidName)
+	loger.Info().Str("pid", pidFilePath).Msg("Starting MoLing MCP Server...")
+	err = utils.CreatePIDFile(pidFilePath)
+	if err != nil {
+		return err
+	}
+
 	// 当前配置文件检测
 	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
@@ -219,21 +231,53 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	}()
 
 	// 创建一个信号通道
-	sigChan := make(chan os.Signal, 1)
+	sigChan := make(chan os.Signal, 2)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// 等待信号
 	_ = <-sigChan
 	loger.Info().Msg("Received signal, shutting down...")
+
 	// close all services
-	for srvName, closer := range closers {
-		err = closer()
-		if err != nil {
-			loger.Error().Err(err).Msgf("failed to close service %s", srvName)
-		} else {
-			loger.Info().Msgf("service %s closed", srvName)
+	// close all services
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+
+	// 在goroutine中等待所有服务关闭
+	go func() {
+		for srvName, closer := range closers {
+			wg.Add(1)
+			go func(name string, closeFn func() error) {
+				defer wg.Done()
+				err := closeFn()
+				if err != nil {
+					loger.Error().Err(err).Msgf("failed to close service %s", name)
+				} else {
+					loger.Info().Msgf("service %s closed", name)
+				}
+			}(srvName, closer)
 		}
+
+		// 等待所有服务关闭
+		wg.Wait()
+		close(done)
+	}()
+
+	// 使用select等待完成或超时
+	select {
+	case <-time.After(5 * time.Second):
+		cancelFunc()
+		loger.Info().Msg("timeout, all services closed forcefully")
+	case <-done:
+		cancelFunc()
+		loger.Info().Msg("all services closed")
 	}
-	loger.Info().Msg("all services closed, Bye!")
-	return err
+	err = utils.RemovePIDFile(pidFilePath)
+	if err != nil {
+		loger.Error().Err(err).Msgf("failed to remove pid file %s", pidFilePath)
+		return err
+	}
+	loger.Info().Msgf("removed pid file %s", pidFilePath)
+	loger.Info().Msg(" Bye!")
+	return nil
 }
