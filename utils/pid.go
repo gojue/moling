@@ -41,7 +41,7 @@ func CreatePIDFile(pidFilePath string) error {
 	}
 	if !locked {
 		_ = file.Close()
-		return fmt.Errorf("another instance is already running:%s", pidFilePath)
+		return fmt.Errorf("another instance is already running: %s", pidFilePath)
 	}
 
 	// Write the current PID to the file
