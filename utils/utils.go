@@ -35,3 +35,13 @@ func CreateDirectory(path string) error {
 	}
 	return nil
 }
+
+// StringInSlice checks if a string is in a slice of strings
+func StringInSlice(s string, modules []string) bool {
+	for _, module := range modules {
+		if module == s {
+			return true
+		}
+	}
+	return false
+}

@@ -29,6 +29,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -129,7 +130,7 @@ func init() {
 	// set default config file path
 	currentUser, err := user.Current()
 	if err == nil {
-		mlConfig.BasePath = filepath.Join(currentUser.HomeDir, ".moling")
+		mlConfig.BasePath = filepath.Join(currentUser.HomeDir, MLRootPath)
 	}
 
 	cobra.EnablePrefixMatching = true
@@ -138,6 +139,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&mlConfig.BasePath, "base_path", mlConfig.BasePath, "MoLing Base Data Path, automatically set by the system, cannot be changed, display only.")
 	rootCmd.PersistentFlags().BoolVarP(&mlConfig.Debug, "debug", "d", false, "Debug mode, default is false.")
 	rootCmd.PersistentFlags().StringVarP(&mlConfig.ListenAddr, "listen_addr", "l", "", "listen address for SSE mode. default:'', not listen, used STDIO mode.")
+	rootCmd.PersistentFlags().StringVarP(&mlConfig.Module, "module", "m", "all", "module to load, default: all; others: browser, filesystem, command, etc. Multiple modules are separated by commas")
 	rootCmd.SilenceUsage = true
 }
 
@@ -189,9 +191,19 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
 	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
 	ctxNew, cancelFunc := context.WithCancel(ctx)
+
+	var modules []string
+	if mlConfig.Module != "all" {
+		modules = strings.Split(mlConfig.Module, ",")
+	}
 	var srvs []services.Service
 	var closers = make(map[string]func() error)
 	for srvName, nsv := range services.ServiceList() {
+		if len(modules) > 0 {
+			if !utils.StringInSlice(string(srvName), modules) {
+				continue
+			}
+		}
 		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
 		srv, err := nsv(ctxNew)
 		if err != nil {

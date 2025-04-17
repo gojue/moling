@@ -36,6 +36,7 @@ type MoLingConfig struct {
 	Version    string `json:"version"`     // The version of the MoLing server.
 	ListenAddr string `json:"listen_addr"` // The address to listen on for SSE mode.
 	Debug      bool   `json:"debug"`       // Debug mode, if true, the server will run in debug mode.
+	Module     string `json:"module"`      // The module to load, default: all
 	Username   string // The username of the user running the server.
 	HomeDir    string // The home directory of the user running the server. macOS: /Users/user1, Linux: /home/user1
 	SystemInfo string // The system information of the user running the server. macOS: Darwin 15.3.3, Linux: Ubuntu 20.04.1 LTS
