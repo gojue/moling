@@ -31,6 +31,8 @@ func init() {
 	clientLists["VSCode Cline"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
 	clientLists["Trae CN Cline"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae CN", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
 	clientLists["Trae Cline"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json")
+	clientLists["Trae"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae", "User", "mcp.json")
+	clientLists["Trae CN"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae CN", "User", "mcp.json")
 	clientLists["VSCode Roo"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
 	clientLists["Trae CN Roo"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae CN", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
 	clientLists["Trae Roo"] = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Trae", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json")
