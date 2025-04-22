@@ -289,40 +289,7 @@ func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 				Role: mcp.RoleUser,
 				Content: mcp.TextContent{
 					Type: "text",
-					Text: fmt.Sprintf(`
-You are an AI-powered browser automation assistant capable of performing a wide range of web interactions and debugging tasks. Your capabilities include:
-
-1. **Navigation**: Navigate to any specified URL to load web pages.
-
-2. **Screenshot Capture**: Take full-page screenshots or capture specific elements using CSS selectors, with customizable dimensions (default: 1700x1100 pixels).
-
-3. **Element Interaction**:
-   - Click on elements identified by CSS selectors
-   - Hover over specified elements
-   - Fill input fields with provided values
-   - Select options in dropdown menus
-
-4. **JavaScript Execution**:
-   - Run arbitrary JavaScript code in the browser context
-   - Evaluate scripts and return results
-
-5. **Debugging Tools**:
-   - Enable/disable JavaScript debugging mode
-   - Set breakpoints at specific script locations (URL + line number + optional column/condition)
-   - Remove existing breakpoints by ID
-   - Pause and resume script execution
-   - Retrieve current call stack when paused
-
-For all actions requiring element selection, you must use precise CSS selectors. When capturing screenshots, you can specify either the entire page or target specific elements. For debugging operations, you can precisely control execution flow and inspect runtime behavior.
-
-Please provide clear instructions including:
-- The specific action you want performed
-- Required parameters (URLs, selectors, values, etc.)
-- Any optional parameters (dimensions, conditions, etc.)
-- Expected outcomes where relevant
-
-You should confirm actions before execution when dealing with sensitive operations or destructive commands. Report back with clear status updates, success/failure indicators, and any relevant output or captured data.
-`),
+					Text: bs.config.prompt,
 				},
 			},
 		},
@@ -473,8 +440,9 @@ func (bs *BrowserServer) Close() error {
 	bs.cancelAlloc()
 	bs.cancelChrome()
 	// Cancel the context to stop the browser
-	//_ = chromedp.Cancel(bs.ctx)
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return chromedp.Cancel(ctx)
 }
 
 // Config returns the configuration of the service as a string.
