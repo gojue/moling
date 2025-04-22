@@ -246,6 +246,23 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	sigChan := make(chan os.Signal, 2)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// 创建一个 goroutine 来判断父进程是否退出
+	// Claude Desktop 0.9.2 退出时，没有向MCP Server发送 SIGTERM信号，导致MCP 不能正常退出。
+	// fix https://github.com/gojue/moling/issues/32
+	go func() {
+		ppid := os.Getppid()
+		for {
+			time.Sleep(1 * time.Second)
+			newPpid := os.Getppid()
+			if newPpid == 1 {
+				loger.Info().Msgf("parent process changed,origin PPid:%d, New PPid:%d", ppid, newPpid)
+				loger.Warn().Msg("parent process exited")
+				sigChan <- syscall.SIGTERM
+				break
+			}
+		}
+	}()
+
 	// 等待信号
 	_ = <-sigChan
 	loger.Info().Msg("Received signal, shutting down...")
