@@ -1,3 +1,15 @@
+# v0.3.1 (2025-04-22)
+
+## What's Changed
+
+* fix: handle parent process exit to ensure MCP Server shutdown by @cfc4n
+  in [#33](https://github.com/gojue/moling/pull/33)
+* feat: update default prompts for browser, command, and filesystem modules by @cfc4n
+  in [#34](https://github.com/gojue/moling/pull/34)
+
+**Full Changelog**: https://github.com/gojue/moling/compare/v0.3.0...v0.3.1
+<hr>
+
 # v0.3.0 (2025-04-18)
 
 ## What's Changed
