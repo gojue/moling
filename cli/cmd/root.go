@@ -139,7 +139,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&mlConfig.BasePath, "base_path", mlConfig.BasePath, "MoLing Base Data Path, automatically set by the system, cannot be changed, display only.")
 	rootCmd.PersistentFlags().BoolVarP(&mlConfig.Debug, "debug", "d", false, "Debug mode, default is false.")
 	rootCmd.PersistentFlags().StringVarP(&mlConfig.ListenAddr, "listen_addr", "l", "", "listen address for SSE mode. default:'', not listen, used STDIO mode.")
-	rootCmd.PersistentFlags().StringVarP(&mlConfig.Module, "module", "m", "all", "module to load, default: all; others: browser, filesystem, command, etc. Multiple modules are separated by commas")
+	rootCmd.PersistentFlags().StringVarP(&mlConfig.Module, "module", "m", "all", "module to load, default: all; others: Browser,FileSystem,Command, etc. Multiple modules are separated by commas")
 	rootCmd.SilenceUsage = true
 }
 
