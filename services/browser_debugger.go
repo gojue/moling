@@ -29,7 +29,8 @@ import (
 
 // handleDebugEnable handles the enabling and disabling of debugging in the browser.
 func (bs *BrowserServer) handleDebugEnable(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	enabled, ok := request.Params.Arguments["enabled"].(bool)
+	args := request.GetArguments()
+	enabled, ok := args["enabled"].(bool)
 	if !ok {
 		return mcp.NewToolResultError("enabled must be a boolean"), nil
 	}
@@ -64,18 +65,19 @@ func (bs *BrowserServer) handleDebugEnable(ctx context.Context, request mcp.Call
 
 // handleSetBreakpoint handles setting a breakpoint in the browser.
 func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	url, ok := request.Params.Arguments["url"].(string)
+	args := request.GetArguments()
+	url, ok := args["url"].(string)
 	if !ok {
 		return mcp.NewToolResultError("url must be a string"), nil
 	}
 
-	line, ok := request.Params.Arguments["line"].(float64)
+	line, ok := args["line"].(float64)
 	if !ok {
 		return mcp.NewToolResultError("line must be a number"), nil
 	}
 
-	column, _ := request.Params.Arguments["column"].(float64)
-	condition, _ := request.Params.Arguments["condition"].(string)
+	column, _ := args["column"].(float64)
+	condition, _ := args["condition"].(string)
 
 	var breakpointID string
 	rctx, cancel := context.WithCancel(bs.ctx)
@@ -111,7 +113,8 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 
 // handleRemoveBreakpoint handles removing a breakpoint in the browser.
 func (bs *BrowserServer) handleRemoveBreakpoint(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	breakpointID, ok := request.Params.Arguments["breakpointId"].(string)
+	args := request.GetArguments()
+	breakpointID, ok := args["breakpointId"].(string)
 	if !ok {
 		return mcp.NewToolResultError("breakpointId must be a string"), nil
 	}

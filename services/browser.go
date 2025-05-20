@@ -74,11 +74,7 @@ func NewBrowserServer(ctx context.Context) (Service, error) {
 
 // Init initializes the browser server by creating a new context.
 func (bs *BrowserServer) Init() error {
-	//loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
-	//	e.Str("Service", string(bs.Name()))
-	//})
-
-	//bs.logger = bs.logger.Hook(loggerNameHook)
+	// Initialize the browser server
 	err := bs.initBrowser(bs.config.BrowserDataPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize browser: %v", err)
@@ -96,17 +92,29 @@ func (bs *BrowserServer) Init() error {
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("enable-automation", false),
 		chromedp.Flag("disable-features", "Translate"),
-		chromedp.Flag("headless", bs.config.Headless),
 		chromedp.Flag("hide-scrollbars", false),
 		chromedp.Flag("mute-audio", true),
+		//chromedp.Flag("no-sandbox", true),
 		chromedp.Flag("disable-infobars", true),
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("CommandLineFlagSecurityWarningsEnabled", false),
+		chromedp.Flag("disable-notifications", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("autoplay-policy", "user-gesture-required"),
 		chromedp.CombinedOutput(bs.logger),
+		// (1920, 1080), (1366, 768), (1440, 900), (1280, 800)
 		chromedp.WindowSize(1280, 800),
 		chromedp.UserDataDir(bs.config.BrowserDataPath),
 		chromedp.IgnoreCertErrors,
 	)
+
+	// headless mode
+	if bs.config.Headless {
+		opts = append(opts, chromedp.Flag("headless", true))
+		opts = append(opts, chromedp.Flag("disable-gpu", true))
+		opts = append(opts, chromedp.Flag("disable-webgl", true))
+	}
+
 	bs.ctx, bs.cancelAlloc = chromedp.NewExecAllocator(context.Background(), opts...)
 
 	bs.ctx, bs.cancelChrome = chromedp.NewContext(bs.ctx,
@@ -298,7 +306,8 @@ func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 
 // handleNavigate handles the navigation action.
 func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	url, ok := request.Params.Arguments["url"].(string)
+	args := request.GetArguments()
+	url, ok := args["url"].(string)
 	if !ok {
 		return nil, fmt.Errorf("url must be a string")
 	}
@@ -312,13 +321,14 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 
 // handleScreenshot handles the screenshot action.
 func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	name, ok := request.Params.Arguments["name"].(string)
+	args := request.GetArguments()
+	name, ok := args["name"].(string)
 	if !ok {
 		return mcp.NewToolResultError("name must be a string"), nil
 	}
-	selector, _ := request.Params.Arguments["selector"].(string)
-	width, _ := request.Params.Arguments["width"].(int)
-	height, _ := request.Params.Arguments["height"].(int)
+	selector, _ := args["selector"].(string)
+	width, _ := args["width"].(int)
+	height, _ := args["height"].(int)
 	if width == 0 {
 		width = 1280
 	}
@@ -348,7 +358,8 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 
 // handleClick handles the click action on a specified element.
 func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	selector, ok := request.Params.Arguments["selector"].(string)
+	args := request.GetArguments()
+	selector, ok := args["selector"].(string)
 	if !ok {
 		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
@@ -367,14 +378,15 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 
 // handleFill handles the fill action on a specified input field.
 func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	selector, ok := request.Params.Arguments["selector"].(string)
+	args := request.GetArguments()
+	selector, ok := args["selector"].(string)
 	if !ok {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to fill selector:%v", request.Params.Arguments["selector"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill selector:%v", args["selector"])), nil
 	}
 
-	value, ok := request.Params.Arguments["value"].(string)
+	value, ok := args["value"].(string)
 	if !ok {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v, selector:%v", request.Params.Arguments["value"], selector)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v, selector:%v", args["value"], selector)), nil
 	}
 
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
@@ -387,13 +399,14 @@ func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolReq
 }
 
 func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	selector, ok := request.Params.Arguments["selector"].(string)
+	args := request.GetArguments()
+	selector, ok := args["selector"].(string)
 	if !ok {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to select selector:%v", request.Params.Arguments["selector"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to select selector:%v", args["selector"])), nil
 	}
-	value, ok := request.Params.Arguments["value"].(string)
+	value, ok := args["value"].(string)
 	if !ok {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to select value:%v", request.Params.Arguments["value"])), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to select value:%v", args["value"])), nil
 	}
 	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
@@ -406,7 +419,8 @@ func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolR
 
 // handleHover handles the hover action on a specified element.
 func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	selector, ok := request.Params.Arguments["selector"].(string)
+	args := request.GetArguments()
+	selector, ok := args["selector"].(string)
 	if !ok {
 		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
@@ -421,7 +435,8 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 }
 
 func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	script, ok := request.Params.Arguments["script"].(string)
+	args := request.GetArguments()
+	script, ok := args["script"].(string)
 	if !ok {
 		return mcp.NewToolResultError("script must be a string"), nil
 	}
