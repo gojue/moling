@@ -116,7 +116,8 @@ func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPrompt
 
 // handleExecuteCommand handles the execution of a named command.
 func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	command, ok := request.Params.Arguments["command"].(string)
+	args := request.GetArguments()
+	command, ok := args["command"].(string)
 	if !ok {
 		return mcp.NewToolResultError(fmt.Errorf("command must be a string").Error()), nil
 	}

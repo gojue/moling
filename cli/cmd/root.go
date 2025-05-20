@@ -201,8 +201,10 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	for srvName, nsv := range services.ServiceList() {
 		if len(modules) > 0 {
 			if !utils.StringInSlice(string(srvName), modules) {
+				loger.Debug().Str("moduleName", string(srvName)).Msgf("module %s not in %v, skip", string(srvName), modules)
 				continue
 			}
+			loger.Debug().Str("moduleName", string(srvName)).Msgf("starting %s service", srvName)
 		}
 		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
 		srv, err := nsv(ctxNew)

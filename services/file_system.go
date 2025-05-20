@@ -448,7 +448,8 @@ func (fs *FilesystemServer) handleReadResource(ctx context.Context, request mcp.
 // Tool handlers
 
 func (fs *FilesystemServer) handleReadFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
 	}
@@ -603,11 +604,12 @@ func (fs *FilesystemServer) handleReadFile(ctx context.Context, request mcp.Call
 }
 
 func (fs *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
 	}
-	content, ok := request.Params.Arguments["content"].(string)
+	content, ok := args["content"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Content must be a string"), nil
 	}
@@ -669,7 +671,8 @@ func (fs *FilesystemServer) handleWriteFile(ctx context.Context, request mcp.Cal
 }
 
 func (fs *FilesystemServer) handleListDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("Path must be a string"), nil
 	}
@@ -735,7 +738,8 @@ func (fs *FilesystemServer) handleListDirectory(ctx context.Context, request mcp
 }
 
 func (fs *FilesystemServer) handleCreateDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("path must be a string"), nil
 	}
@@ -793,11 +797,12 @@ func (fs *FilesystemServer) handleCreateDirectory(ctx context.Context, request m
 }
 
 func (fs *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	source, ok := request.Params.Arguments["source"].(string)
+	args := request.GetArguments()
+	source, ok := args["source"].(string)
 	if !ok {
 		return mcp.NewToolResultError("source must be a string"), nil
 	}
-	destination, ok := request.Params.Arguments["destination"].(string)
+	destination, ok := args["destination"].(string)
 	if !ok {
 		return mcp.NewToolResultError("destination must be a string"), nil
 	}
@@ -851,11 +856,12 @@ func (fs *FilesystemServer) handleMoveFile(ctx context.Context, request mcp.Call
 }
 
 func (fs *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
 		return mcp.NewToolResultError("path must be a string"), nil
 	}
-	pattern, ok := request.Params.Arguments["pattern"].(string)
+	pattern, ok := args["pattern"].(string)
 	if !ok {
 		return mcp.NewToolResultError("pattern must be a string"), nil
 	}
@@ -907,9 +913,10 @@ func (fs *FilesystemServer) handleSearchFiles(ctx context.Context, request mcp.C
 }
 
 func (fs *FilesystemServer) handleGetFileInfo(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	path, ok := request.Params.Arguments["path"].(string)
+	args := request.GetArguments()
+	path, ok := args["path"].(string)
 	if !ok {
-		return mcp.NewToolResultError(fmt.Errorf("path %v must be a string", request.Params.Arguments["path"]).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("path %v must be a string", args["path"]).Error()), nil
 	}
 
 	validPath, err := fs.validatePath(path)

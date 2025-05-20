@@ -71,7 +71,7 @@ func TestBrowserServer(t *testing.T) {
 					Method: "tools/call",
 				},
 			}
-			request.Params.Arguments = map[string]interface{}{
+			args = map[string]interface{}{
 				"url": "https://www.baidu.com",
 			}
 			result, err := bs.handleNavigate(ctx, request)

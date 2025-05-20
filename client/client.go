@@ -51,7 +51,7 @@ func NewMCPServerConfig(description string, command string, srvName string) MCPS
 		Description: description,
 		IsActive:    true,
 		Command:     command,
-		Args:        []string{"-m", "all"},
+		Args:        []string{"-m", "Browser"},
 		BaseUrl:     "",
 		ServerName:  srvName,
 		TimeOut:     300,
