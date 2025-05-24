@@ -15,7 +15,7 @@
 // Repository: https://github.com/gojue/moling
 
 // Package services provides a set of services for the MoLing application.
-package services
+package browser
 
 import (
 	"fmt"

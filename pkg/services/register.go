@@ -17,18 +17,30 @@
 package services
 
 import (
-	"context"
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/services/abstract"
+	"github.com/gojue/moling/pkg/services/browser"
+	"github.com/gojue/moling/pkg/services/command"
+	"github.com/gojue/moling/pkg/services/filesystem"
 )
 
-var serviceLists = make(map[MoLingServerType]func(ctx context.Context) (Service, error))
+var serviceLists = make(map[comm.MoLingServerType]abstract.ServiceFactory)
 
 // RegisterServ register service
-func RegisterServ(n MoLingServerType, f func(ctx context.Context) (Service, error)) {
-	//serviceLists = append(, f)
+func RegisterServ(n comm.MoLingServerType, f abstract.ServiceFactory) {
 	serviceLists[n] = f
 }
 
 // ServiceList  get service lists
-func ServiceList() map[MoLingServerType]func(ctx context.Context) (Service, error) {
+func ServiceList() map[comm.MoLingServerType]abstract.ServiceFactory {
 	return serviceLists
+}
+
+func init() {
+	// Register the filesystem service
+	RegisterServ(filesystem.FilesystemServerName, filesystem.NewFilesystemServer)
+	// Register the browser service
+	RegisterServ(browser.BrowserServerName, browser.NewBrowserServer)
+	// Register the command service
+	RegisterServ(command.CommandServerName, command.NewCommandServer)
 }

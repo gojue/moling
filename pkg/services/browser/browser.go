@@ -15,31 +15,35 @@
 // Repository: https://github.com/gojue/moling
 
 // Package services provides a set of services for the MoLing application.
-package services
+package browser
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/chromedp/chromedp"
-	"github.com/gojue/moling/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/chromedp/chromedp"
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/config"
+	"github.com/gojue/moling/pkg/services/abstract"
+	"github.com/gojue/moling/pkg/utils"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
 )
 
 const (
-	BrowserDataPath                    = "browser" // Path to store browser data
-	BrowserServerName MoLingServerType = "Browser"
+	BrowserDataPath                         = "browser" // Path to store browser data
+	BrowserServerName comm.MoLingServerType = "Browser"
 )
 
 // BrowserServer represents the configuration for the browser service.
 type BrowserServer struct {
-	MLService
+	abstract.MLService
 	config       *BrowserConfig
 	name         string // The name of the service
 	cancelAlloc  context.CancelFunc
@@ -47,24 +51,24 @@ type BrowserServer struct {
 }
 
 // NewBrowserServer creates a new BrowserServer instance with the given context and configuration.
-func NewBrowserServer(ctx context.Context) (Service, error) {
+func NewBrowserServer(ctx context.Context) (abstract.Service, error) {
 	bc := NewBrowserConfig()
-	globalConf := ctx.Value(MoLingConfigKey).(*MoLingConfig)
+	globalConf := ctx.Value(comm.MoLingConfigKey).(*config.MoLingConfig)
 	bc.BrowserDataPath = filepath.Join(globalConf.BasePath, BrowserDataPath)
 	bc.DataPath = filepath.Join(globalConf.BasePath, "data")
-	logger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
+	logger, ok := ctx.Value(comm.MoLingLoggerKey).(zerolog.Logger)
 	if !ok {
-		return nil, fmt.Errorf("BrowserServer: invalid logger type: %T", ctx.Value(MoLingLoggerKey))
+		return nil, fmt.Errorf("BrowserServer: invalid logger type: %T", ctx.Value(comm.MoLingLoggerKey))
 	}
 	loggerNameHook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, msg string) {
 		e.Str("Service", string(BrowserServerName))
 	})
 	bs := &BrowserServer{
-		MLService: NewMLService(ctx, logger.Hook(loggerNameHook), globalConf),
+		MLService: abstract.NewMLService(ctx, logger.Hook(loggerNameHook), globalConf),
 		config:    bc,
 	}
 
-	err := bs.init()
+	err := bs.InitResources()
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +105,7 @@ func (bs *BrowserServer) Init() error {
 		chromedp.Flag("disable-notifications", true),
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("autoplay-policy", "user-gesture-required"),
-		chromedp.CombinedOutput(bs.logger),
+		chromedp.CombinedOutput(bs.Logger),
 		// (1920, 1080), (1366, 768), (1440, 900), (1280, 800)
 		chromedp.WindowSize(1280, 800),
 		chromedp.UserDataDir(bs.config.BrowserDataPath),
@@ -115,20 +119,20 @@ func (bs *BrowserServer) Init() error {
 		opts = append(opts, chromedp.Flag("disable-webgl", true))
 	}
 
-	bs.ctx, bs.cancelAlloc = chromedp.NewExecAllocator(context.Background(), opts...)
+	bs.Context, bs.cancelAlloc = chromedp.NewExecAllocator(context.Background(), opts...)
 
-	bs.ctx, bs.cancelChrome = chromedp.NewContext(bs.ctx,
-		chromedp.WithErrorf(bs.logger.Error().Msgf),
-		chromedp.WithDebugf(bs.logger.Debug().Msgf),
+	bs.Context, bs.cancelChrome = chromedp.NewContext(bs.Context,
+		chromedp.WithErrorf(bs.Logger.Error().Msgf),
+		chromedp.WithDebugf(bs.Logger.Debug().Msgf),
 	)
 
-	pe := PromptEntry{
-		prompt: mcp.Prompt{
+	pe := abstract.PromptEntry{
+		PromptVar: mcp.Prompt{
 			Name:        "browser_prompt",
 			Description: fmt.Sprintf("Get the relevant functions and prompts of the Browser MCP Server."),
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
-		phf: bs.handlePrompt,
+		HandlerFunc: bs.handlePrompt,
 	}
 	bs.AddPrompt(pe)
 	bs.AddTool(mcp.NewTool(
@@ -272,10 +276,10 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 		singletonLock := filepath.Join(userDataDir, "SingletonLock")
 		_, err = os.Stat(singletonLock)
 		if err == nil {
-			bs.logger.Debug().Msg("Browser is already running, removing SingletonLock")
+			bs.Logger.Debug().Msg("Browser is already running, removing SingletonLock")
 			err = os.RemoveAll(singletonLock)
 			if err != nil {
-				bs.logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %v", err)
+				bs.Logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %v", err)
 			}
 		}
 		return nil
@@ -312,7 +316,7 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 		return nil, fmt.Errorf("url must be a string")
 	}
 
-	err := chromedp.Run(bs.ctx, chromedp.Navigate(url))
+	err := chromedp.Run(bs.Context, chromedp.Navigate(url))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %v", err)), nil
 	}
@@ -337,12 +341,12 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 	}
 	var buf []byte
 	var err error
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	if selector == "" {
 		err = chromedp.Run(runCtx, chromedp.FullScreenshot(&buf, 90))
 	} else {
-		err = chromedp.Run(bs.ctx, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible))
+		err = chromedp.Run(bs.Context, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible))
 	}
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %v", err)), nil
@@ -363,7 +367,7 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 	if !ok {
 		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx,
 		chromedp.WaitReady("body", chromedp.ByQuery), // 等待页面就绪
@@ -389,7 +393,7 @@ func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolReq
 		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v, selector:%v", args["value"], selector)), nil
 	}
 
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
 	if err != nil {
@@ -408,7 +412,7 @@ func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolR
 	if !ok {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to select value:%v", args["value"])), nil
 	}
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SetValue(selector, value, chromedp.NodeVisible))
 	if err != nil {
@@ -425,7 +429,7 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 		return mcp.NewToolResultError(fmt.Sprintf("selector must be a string:%v", selector)), nil
 	}
 	var res bool
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
@@ -441,7 +445,7 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 		return mcp.NewToolResultError("script must be a string"), nil
 	}
 	var result interface{}
-	runCtx, cancelFunc := context.WithTimeout(bs.ctx, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
+	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(script, &result))
 	if err != nil {
@@ -451,7 +455,7 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 }
 
 func (bs *BrowserServer) Close() error {
-	bs.logger.Debug().Msg("Closing browser server")
+	bs.Logger.Debug().Msg("Closing browser server")
 	bs.cancelAlloc()
 	bs.cancelChrome()
 	// Cancel the context to stop the browser
@@ -464,25 +468,21 @@ func (bs *BrowserServer) Close() error {
 func (bs *BrowserServer) Config() string {
 	cfg, err := json.Marshal(bs.config)
 	if err != nil {
-		bs.logger.Err(err).Msg("failed to marshal config")
+		bs.Logger.Err(err).Msg("failed to marshal config")
 		return "{}"
 	}
 	return string(cfg)
 }
 
-func (bs *BrowserServer) Name() MoLingServerType {
+func (bs *BrowserServer) Name() comm.MoLingServerType {
 	return BrowserServerName
 }
 
 // LoadConfig loads the configuration from a JSON object.
 func (bs *BrowserServer) LoadConfig(jsonData map[string]interface{}) error {
-	err := mergeJSONToStruct(bs.config, jsonData)
+	err := utils.MergeJSONToStruct(bs.config, jsonData)
 	if err != nil {
 		return err
 	}
 	return bs.config.Check()
-}
-
-func init() {
-	RegisterServ(BrowserServerName, NewBrowserServer)
 }

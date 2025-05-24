@@ -14,26 +14,10 @@
 //
 // Repository: https://github.com/gojue/moling
 
-package cmd
+package comm
 
-import (
-	"path/filepath"
+import "errors"
 
-	"github.com/gojue/moling/pkg/utils"
-	"github.com/spf13/cobra"
+var (
+	ErrConfigNotLoaded = errors.New("config not loaded, please call LoadConfig() first")
 )
-
-// mlsCommandPreFunc is a pre-run function for the MoLing command.
-func mlsCommandPreFunc(cmd *cobra.Command, args []string) error {
-	err := utils.CreateDirectory(mlConfig.BasePath)
-	if err != nil {
-		return err
-	}
-	for _, dirName := range mlDirectories {
-		err = utils.CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}

@@ -1,48 +1,45 @@
-/*
- *
- *  Copyright 2025 CFC4N <cfc4n.cs@gmail.com>. All Rights Reserved.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  Repository: https://github.com/gojue/moling
- *
- */
-
-package services
+// Copyright 2025 CFC4N <cfc4n.cs@gmail.com>. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Repository: https://github.com/gojue/moling
+package server
 
 import (
 	"context"
 	"fmt"
-	"github.com/mark3labs/mcp-go/server"
-	"github.com/rs/zerolog"
 	"log"
 	"os"
 	"strings"
 	"time"
-)
 
-type MoLingServerType string // MoLingServerType is the type of the server
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/config"
+	"github.com/gojue/moling/pkg/services/abstract"
+	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/zerolog"
+)
 
 type MoLingServer struct {
 	ctx        context.Context
 	server     *server.MCPServer
-	services   []Service
+	services   []abstract.Service
 	logger     zerolog.Logger
-	mlConfig   MoLingConfig
+	mlConfig   config.MoLingConfig
 	listenAddr string // SSE mode listen address, if empty, use STDIO mode.
 }
 
-func NewMoLingServer(ctx context.Context, srvs []Service, mlConfig MoLingConfig) (*MoLingServer, error) {
+func NewMoLingServer(ctx context.Context, srvs []abstract.Service, mlConfig config.MoLingConfig) (*MoLingServer, error) {
 	mcpServer := server.NewMCPServer(
 		mlConfig.ServerName,
 		mlConfig.Version,
@@ -56,7 +53,7 @@ func NewMoLingServer(ctx context.Context, srvs []Service, mlConfig MoLingConfig)
 		server:     mcpServer,
 		services:   srvs,
 		listenAddr: mlConfig.ListenAddr,
-		logger:     ctx.Value(MoLingLoggerKey).(zerolog.Logger),
+		logger:     ctx.Value(comm.MoLingLoggerKey).(zerolog.Logger),
 		mlConfig:   mlConfig,
 	}
 	err := ms.init()
@@ -75,7 +72,7 @@ func (m *MoLingServer) init() error {
 	return err
 }
 
-func (m *MoLingServer) loadService(srv Service) error {
+func (m *MoLingServer) loadService(srv abstract.Service) error {
 
 	// Add resources
 	for r, rhf := range srv.Resources() {

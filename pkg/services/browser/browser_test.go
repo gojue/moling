@@ -14,34 +14,13 @@
 //
 // Repository: https://github.com/gojue/moling
 
-package services
+package browser
 
 import (
-	"context"
-	"github.com/rs/zerolog"
-	"os"
-	"path/filepath"
 	"testing"
-)
 
-// initTestEnv initializes the test environment by creating a temporary log file and setting up the logger.
-func initTestEnv() (zerolog.Logger, context.Context, error) {
-	logFile := filepath.Join(os.TempDir(), "moling.log")
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	var logger zerolog.Logger
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
-		return zerolog.Logger{}, nil, err
-	}
-	logger = zerolog.New(f).With().Timestamp().Logger()
-	mlConfig := &MoLingConfig{
-		ConfigFile: filepath.Join("config", "test_config.json"),
-		BasePath:   os.TempDir(),
-	}
-	ctx := context.WithValue(context.Background(), MoLingConfigKey, mlConfig)
-	ctx = context.WithValue(ctx, MoLingLoggerKey, logger)
-	return logger, ctx, nil
-}
+	"github.com/gojue/moling/pkg/comm"
+)
 
 func TestBrowserServer(t *testing.T) {
 	//
@@ -53,7 +32,7 @@ func TestBrowserServer(t *testing.T) {
 	//	URLTimeout:      10,
 	//	SelectorQueryTimeout:      10,
 	//}
-	logger, ctx, err := initTestEnv()
+	logger, ctx, err := comm.InitTestEnv()
 	if err != nil {
 		t.Fatalf("Failed to initialize test environment: %v", err)
 	}

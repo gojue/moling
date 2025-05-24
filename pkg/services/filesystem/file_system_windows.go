@@ -16,7 +16,7 @@
  * Repository: https://github.com/gojue/moling
  */
 
-package services
+package filesystem
 
 import "os"
 

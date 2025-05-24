@@ -14,7 +14,7 @@
 //
 // Repository: https://github.com/gojue/moling
 
-package services
+package command
 
 import (
 	"context"
@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/gojue/moling/pkg/comm"
 )
 
 // MockCommandServer is a mock implementation of CommandServer for testing purposes.
@@ -65,7 +67,7 @@ func TestExecuteCommand(t *testing.T) {
 
 func TestAllowCmd(t *testing.T) {
 	// Test with a command that is allowed
-	_, ctx, err := initTestEnv()
+	_, ctx, err := comm.InitTestEnv()
 	if err != nil {
 		t.Fatalf("Failed to initialize test environment: %v", err)
 	}
