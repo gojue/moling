@@ -20,11 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gojue/moling/cli/cobrautl"
-	"github.com/gojue/moling/services"
-	"github.com/gojue/moling/utils"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"os/user"
@@ -33,6 +28,16 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/gojue/moling/cli/cobrautl"
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/config"
+	"github.com/gojue/moling/pkg/server"
+	"github.com/gojue/moling/pkg/services"
+	"github.com/gojue/moling/pkg/services/abstract"
+	"github.com/gojue/moling/pkg/utils"
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -78,7 +83,7 @@ const (
 
 var (
 	GitVersion = "unknown_arm64_v0.0.0_2025-03-22 20:08"
-	mlConfig   = &services.MoLingConfig{
+	mlConfig   = &config.MoLingConfig{
 		Version:    GitVersion,
 		ConfigFile: filepath.Join("config", MLConfigName),
 		BasePath:   filepath.Join(os.TempDir(), MLRootPath), // will set in mlsCommandPreFunc
@@ -188,15 +193,15 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 		}
 	}
 	loger.Info().Str("config_file", configFilePath).Msg("load config file")
-	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
-	ctx = context.WithValue(ctx, services.MoLingLoggerKey, loger)
+	ctx := context.WithValue(context.Background(), comm.MoLingConfigKey, mlConfig)
+	ctx = context.WithValue(ctx, comm.MoLingLoggerKey, loger)
 	ctxNew, cancelFunc := context.WithCancel(ctx)
 
 	var modules []string
 	if mlConfig.Module != "all" {
 		modules = strings.Split(mlConfig.Module, ",")
 	}
-	var srvs []services.Service
+	var srvs []abstract.Service
 	var closers = make(map[string]func() error)
 	for srvName, nsv := range services.ServiceList() {
 		if len(modules) > 0 {
@@ -228,7 +233,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 		closers[string(srv.Name())] = srv.Close
 	}
 	// MCPServer
-	srv, err := services.NewMoLingServer(ctxNew, srvs, *mlConfig)
+	srv, err := server.NewMoLingServer(ctxNew, srvs, *mlConfig)
 	if err != nil {
 		loger.Error().Err(err).Msg("failed to create server")
 		cancelFunc()

@@ -14,17 +14,18 @@
 //
 // Repository: https://github.com/gojue/moling
 
-package services
+package abstract
 
 import (
 	"context"
-	"github.com/mark3labs/mcp-go/mcp"
 	"testing"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 func TestMLService_AddResource(t *testing.T) {
 	service := &MLService{}
-	err := service.init()
+	err := service.InitResources()
 	if err != nil {
 		t.Fatalf("Failed to initialize MLService: %v", err)
 	}
@@ -51,7 +52,7 @@ func TestMLService_AddResource(t *testing.T) {
 
 func TestMLService_AddResourceTemplate(t *testing.T) {
 	service := &MLService{}
-	err := service.init()
+	err := service.InitResources()
 	if err != nil {
 		t.Fatalf("Failed to initialize MLService: %v", err)
 	}
@@ -78,7 +79,7 @@ func TestMLService_AddResourceTemplate(t *testing.T) {
 
 func TestMLService_AddPrompt(t *testing.T) {
 	service := &MLService{}
-	err := service.init()
+	err := service.InitResources()
 	if err != nil {
 		t.Fatalf("Failed to initialize MLService: %v", err)
 	}
@@ -98,8 +99,8 @@ func TestMLService_AddPrompt(t *testing.T) {
 		}, nil
 	}
 	pe := PromptEntry{
-		prompt: mcp.Prompt{Name: "testPrompt"},
-		phf:    handler,
+		PromptVar:   mcp.Prompt{Name: "testPrompt"},
+		HandlerFunc: handler,
 	}
 	service.AddPrompt(pe)
 
@@ -107,15 +108,15 @@ func TestMLService_AddPrompt(t *testing.T) {
 		t.Errorf("Expected 1 prompt, got %d", len(service.prompts))
 	}
 	for _, p := range service.prompts {
-		if p.prompt.Name != prompt {
-			t.Errorf("Expected prompt name %s, got %s", prompt, p.prompt.Name)
+		if p.PromptVar.Name != prompt {
+			t.Errorf("Expected prompt name %s, got %s", prompt, p.PromptVar.Name)
 		}
 	}
 }
 
 func TestMLService_AddTool(t *testing.T) {
 	service := &MLService{}
-	err := service.init()
+	err := service.InitResources()
 	if err != nil {
 		t.Fatalf("Failed to initialize MLService: %v", err)
 	}
@@ -145,7 +146,7 @@ func TestMLService_AddTool(t *testing.T) {
 
 func TestMLService_AddNotificationHandler(t *testing.T) {
 	service := &MLService{}
-	err := service.init()
+	err := service.InitResources()
 	if err != nil {
 		t.Fatalf("Failed to initialize MLService: %v", err)
 	}

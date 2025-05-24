@@ -21,12 +21,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gojue/moling/services"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/services"
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
 )
 
 var configCmd = &cobra.Command{
@@ -50,8 +52,8 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	logger = zerolog.New(multi).With().Timestamp().Logger()
 	mlConfig.SetLogger(logger)
 	logger.Info().Msg("Start to show config")
-	ctx := context.WithValue(context.Background(), services.MoLingConfigKey, mlConfig)
-	ctx = context.WithValue(ctx, services.MoLingLoggerKey, logger)
+	ctx := context.WithValue(context.Background(), comm.MoLingConfigKey, mlConfig)
+	ctx = context.WithValue(ctx, comm.MoLingLoggerKey, logger)
 
 	// 当前配置文件检测
 	hasConfig := false

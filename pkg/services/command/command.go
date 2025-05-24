@@ -15,16 +15,21 @@
 // Repository: https://github.com/gojue/moling
 
 // Package services Description: This file contains the implementation of the CommandServer interface for macOS and  Linux.
-package services
+package command
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 	"path/filepath"
 	"strings"
+
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/config"
+	"github.com/gojue/moling/pkg/services/abstract"
+	"github.com/gojue/moling/pkg/utils"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -35,27 +40,27 @@ var (
 )
 
 const (
-	CommandServerName MoLingServerType = "Command"
+	CommandServerName comm.MoLingServerType = "Command"
 )
 
 // CommandServer implements the Service interface and provides methods to execute named commands.
 type CommandServer struct {
-	MLService
+	abstract.MLService
 	config    *CommandConfig
 	osName    string
 	osVersion string
 }
 
 // NewCommandServer creates a new CommandServer with the given allowed commands.
-func NewCommandServer(ctx context.Context) (Service, error) {
+func NewCommandServer(ctx context.Context) (abstract.Service, error) {
 	var err error
 	cc := NewCommandConfig()
-	gConf, ok := ctx.Value(MoLingConfigKey).(*MoLingConfig)
+	gConf, ok := ctx.Value(comm.MoLingConfigKey).(*config.MoLingConfig)
 	if !ok {
 		return nil, fmt.Errorf("CommandServer: invalid config type")
 	}
 
-	lger, ok := ctx.Value(MoLingLoggerKey).(zerolog.Logger)
+	lger, ok := ctx.Value(comm.MoLingLoggerKey).(zerolog.Logger)
 	if !ok {
 		return nil, fmt.Errorf("CommandServer: invalid logger type")
 	}
@@ -65,11 +70,11 @@ func NewCommandServer(ctx context.Context) (Service, error) {
 	})
 
 	cs := &CommandServer{
-		MLService: NewMLService(ctx, lger.Hook(loggerNameHook), gConf),
+		MLService: abstract.NewMLService(ctx, lger.Hook(loggerNameHook), gConf),
 		config:    cc,
 	}
 
-	err = cs.init()
+	err = cs.InitResources()
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +84,13 @@ func NewCommandServer(ctx context.Context) (Service, error) {
 
 func (cs *CommandServer) Init() error {
 	var err error
-	pe := PromptEntry{
-		prompt: mcp.Prompt{
+	pe := abstract.PromptEntry{
+		PromptVar: mcp.Prompt{
 			Name:        "command_prompt",
 			Description: fmt.Sprintf("get command prompt"),
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
-		phf: cs.handlePrompt,
+		HandlerFunc: cs.handlePrompt,
 	}
 	cs.AddPrompt(pe)
 	cs.AddTool(mcp.NewTool(
@@ -124,7 +129,7 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 
 	// Check if the command is allowed
 	if !cs.isAllowedCommand(command) {
-		cs.logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.MlConfig().BasePath, "config", cs.MlConfig().ConfigFile))
+		cs.Logger.Err(ErrCommandNotAllowed).Str("command", command).Msgf("If you want to allow this command, add it to %s", filepath.Join(cs.MlConfig().BasePath, "config", cs.MlConfig().ConfigFile))
 		return mcp.NewToolResultError(fmt.Sprintf("Error: Command '%s' is not allowed", command)), nil
 	}
 
@@ -177,34 +182,30 @@ func (cs *CommandServer) Config() string {
 	cs.config.AllowedCommand = strings.Join(cs.config.allowedCommands, ",")
 	cfg, err := json.Marshal(cs.config)
 	if err != nil {
-		cs.logger.Err(err).Msg("failed to marshal config")
+		cs.Logger.Err(err).Msg("failed to marshal config")
 		return "{}"
 	}
-	cs.logger.Debug().Str("config", string(cfg)).Msg("CommandServer config")
+	cs.Logger.Debug().Str("config", string(cfg)).Msg("CommandServer config")
 	return string(cfg)
 }
 
-func (cs *CommandServer) Name() MoLingServerType {
+func (cs *CommandServer) Name() comm.MoLingServerType {
 	return CommandServerName
 }
 
 func (cs *CommandServer) Close() error {
 	// Cancel the context to stop the browser
-	cs.logger.Debug().Msg("CommandServer closed")
+	cs.Logger.Debug().Msg("CommandServer closed")
 	return nil
 }
 
 // LoadConfig loads the configuration from a JSON object.
 func (cs *CommandServer) LoadConfig(jsonData map[string]interface{}) error {
-	err := mergeJSONToStruct(cs.config, jsonData)
+	err := utils.MergeJSONToStruct(cs.config, jsonData)
 	if err != nil {
 		return err
 	}
 	// split the AllowedCommand string into a slice
 	cs.config.allowedCommands = strings.Split(cs.config.AllowedCommand, ",")
 	return cs.config.Check()
-}
-
-func init() {
-	RegisterServ(CommandServerName, NewCommandServer)
 }
