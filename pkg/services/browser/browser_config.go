@@ -86,7 +86,7 @@ func (cfg *BrowserConfig) Check() error {
 	if cfg.PromptFile != "" {
 		read, err := os.ReadFile(cfg.PromptFile)
 		if err != nil {
-			return fmt.Errorf("failed to read prompt file:%s, error: %v", cfg.PromptFile, err)
+			return fmt.Errorf("failed to read prompt file:%s, error: %w", cfg.PromptFile, err)
 		}
 		cfg.prompt = string(read)
 	}

@@ -162,7 +162,7 @@ func initLogger(mlDataPath string) zerolog.Logger {
 	// 初始化 RotateWriter
 	rw, err := utils.NewRotateWriter(logFile, MaxLogSize) // 512MB 阈值
 	if err != nil {
-		panic(fmt.Sprintf("failed to open log file %s: %v", logFile, err))
+		panic(fmt.Sprintf("failed to open log file %s: %w", logFile, err))
 	}
 	logger = zerolog.New(rw).With().Timestamp().Logger()
 	logger.Info().Uint32("MaxLogSize", MaxLogSize).Msgf("Log files are automatically rotated when they exceed the size threshold, and saved to %s.1 and %s.2 respectively", LogFileName, LogFileName)
@@ -190,7 +190,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
 		err = json.Unmarshal(nowConfig, &nowConfigJson)
 		if err != nil {
-			return fmt.Errorf("Error unmarshaling JSON: %v, config file:%s\n", err, configFilePath)
+			return fmt.Errorf("error unmarshaling JSON: %w, config file:%s", err, configFilePath)
 		}
 	}
 	loger.Info().Str("config_file", configFilePath).Msg("load config file")

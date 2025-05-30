@@ -106,7 +106,7 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to set breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to set breakpoint: %w", err)), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint set with ID: %s", breakpointID)), nil
 }
@@ -129,7 +129,7 @@ func (bs *BrowserServer) handleRemoveBreakpoint(ctx context.Context, request mcp
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to remove breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to remove breakpoint: %w", err)), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint %s removed", breakpointID)), nil
 }
@@ -145,7 +145,7 @@ func (bs *BrowserServer) handlePause(ctx context.Context, request mcp.CallToolRe
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to pause execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to pause execution: %w", err)), nil
 	}
 	return mcp.NewToolResultText("JavaScript execution paused"), nil
 }
@@ -161,7 +161,7 @@ func (bs *BrowserServer) handleResume(ctx context.Context, request mcp.CallToolR
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to resume execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to resume execution: %w", err)), nil
 	}
 	return mcp.NewToolResultText("JavaScript execution resumed"), nil
 }
@@ -178,12 +178,12 @@ func (bs *BrowserServer) handleGetCallstack(ctx context.Context, request mcp.Cal
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to get call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to get call stack: %w", err)), nil
 	}
 
 	callstackJSON, err := json.Marshal(callstack)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal call stack: %w", err)), nil
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Current call stack: %s", string(callstackJSON))), nil

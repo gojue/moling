@@ -39,18 +39,18 @@ func TestConfigLoad(t *testing.T) {
 
 	jsonData, err := os.ReadFile(configFile)
 	if err != nil {
-		t.Fatalf("failed to read config file: %v", err)
+		t.Fatalf("failed to read config file: %w", err)
 	}
 	var jsonMap map[string]interface{}
 	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
-		t.Fatalf("Failed to unmarshal JSON: %v", err)
+		t.Fatalf("Failed to unmarshal JSON: %w", err)
 	}
 	mlConfig, ok := jsonMap["MoLingConfig"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("failed to parse MoLingConfig from JSON")
 	}
 	if err := utils.MergeJSONToStruct(cfg, mlConfig); err != nil {
-		t.Fatalf("failed to merge JSON to struct: %v", err)
+		t.Fatalf("failed to merge JSON to struct: %w", err)
 	}
 	t.Logf("Config loaded, MoLing Config.BasePath: %s", cfg.BasePath)
 	if cfg.BasePath != "/newpath/.moling" {

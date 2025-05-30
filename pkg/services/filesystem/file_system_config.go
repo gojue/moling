@@ -112,7 +112,7 @@ func (fc *FileSystemConfig) Check() error {
 	if fc.PromptFile != "" {
 		read, err := os.ReadFile(fc.PromptFile)
 		if err != nil {
-			return fmt.Errorf("failed to read prompt file:%s, error: %v", fc.PromptFile, err)
+			return fmt.Errorf("failed to read prompt file:%s, error: %w", fc.PromptFile, err)
 		}
 		fc.prompt = string(read)
 	}

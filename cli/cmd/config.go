@@ -116,7 +116,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	var data interface{}
 	err = json.Unmarshal(bf.Bytes(), &data)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling JSON: %v, payload:%s", err, bf.String())
+		return fmt.Errorf("error unmarshaling JSON: %w, payload:%s", err, bf.String())
 	}
 
 	// 格式化 JSON

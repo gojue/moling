@@ -151,7 +151,7 @@ func (c *Manager) checkExist(path string) bool {
 			c.logger.Debug().Msgf("Client config file %s does not exist", path)
 			return false
 		}
-		c.logger.Info().Msgf("check file failed, error:%v", err)
+		c.logger.Info().Msgf("check file failed, error:%w", err)
 		return false
 	}
 	return true
