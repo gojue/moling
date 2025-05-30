@@ -41,7 +41,7 @@ type MCPServerConfig struct {
 	IsActive    bool     `json:"isActive"`          // Is the MCP Server active
 	Command     string   `json:"command,omitempty"` // Command to start the MCP Server, STDIO mode only
 	Args        []string `json:"args,omitempty"`    // Arguments to pass to the command, STDIO mode only
-	BaseUrl     string   `json:"baseUrl,omitempty"` // Base URL of the MCP Server, SSE mode only
+	BaseURL     string   `json:"baseUrl,omitempty"` // Base URL of the MCP Server, SSE mode only
 	TimeOut     uint16   `json:"timeout,omitempty"` // Timeout for the MCP Server, default is 300 seconds
 	ServerName  string
 }
@@ -53,7 +53,7 @@ func NewMCPServerConfig(description string, command string, srvName string) MCPS
 		IsActive:    true,
 		Command:     command,
 		Args:        []string{"-m", "Browser"},
-		BaseUrl:     "",
+		BaseURL:     "",
 		ServerName:  srvName,
 		TimeOut:     300,
 	}

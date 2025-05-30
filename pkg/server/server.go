@@ -101,17 +101,17 @@ func (m *MoLingServer) loadService(srv abstract.Service) error {
 	return nil
 }
 
-func (s *MoLingServer) Serve() error {
-	mLogger := log.New(s.logger, s.mlConfig.ServerName, 0)
-	if s.listenAddr != "" {
-		ltnAddr := fmt.Sprintf("http://%s", strings.TrimPrefix(s.listenAddr, "http://"))
+func (m *MoLingServer) Serve() error {
+	mLogger := log.New(m.logger, m.mlConfig.ServerName, 0)
+	if m.listenAddr != "" {
+		ltnAddr := fmt.Sprintf("http://%m", strings.TrimPrefix(m.listenAddr, "http://"))
 		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-		multi := zerolog.MultiLevelWriter(consoleWriter, s.logger)
-		s.logger = zerolog.New(multi).With().Timestamp().Logger()
-		s.logger.Info().Str("listenAddr", s.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
-		s.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
-		return server.NewSSEServer(s.server, server.WithBaseURL(ltnAddr)).Start(s.listenAddr)
+		multi := zerolog.MultiLevelWriter(consoleWriter, m.logger)
+		m.logger = zerolog.New(multi).With().Timestamp().Logger()
+		m.logger.Info().Str("listenAddr", m.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
+		m.logger.Warn().Msgf("The SSE server URL must be: %m. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
+		return server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr)).Start(m.listenAddr)
 	}
-	s.logger.Info().Msg("Starting STDIO server")
-	return server.ServeStdio(s.server, server.WithErrorLogger(mLogger))
+	m.logger.Info().Msg("Starting STDIO server")
+	return server.ServeStdio(m.server, server.WithErrorLogger(mLogger))
 }
