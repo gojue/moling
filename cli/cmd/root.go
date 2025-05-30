@@ -29,6 +29,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
+
 	"github.com/gojue/moling/cli/cobrautl"
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
@@ -36,8 +39,6 @@ import (
 	"github.com/gojue/moling/pkg/services"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 )
 
 const (

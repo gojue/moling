@@ -25,10 +25,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gojue/moling/pkg/comm"
-	"github.com/gojue/moling/pkg/services"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/services"
 )
 
 var configCmd = &cobra.Command{
@@ -66,7 +67,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	if hasConfig {
 		err = json.Unmarshal(nowConfig, &nowConfigJson)
 		if err != nil {
-			return fmt.Errorf("Error unmarshaling JSON: %v, payload:%s\n", err, string(nowConfig))
+			return fmt.Errorf("Error unmarshaling JSON: %w, payload:%s\n", err, string(nowConfig))
 		}
 	}
 
@@ -76,7 +77,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	// 写入GlobalConfig
 	mlConfigJson, err := json.Marshal(mlConfig)
 	if err != nil {
-		return fmt.Errorf("Error marshaling GlobalConfig: %v\n", err)
+		return fmt.Errorf("Error marshaling GlobalConfig: %w\n", err)
 	}
 	bf.WriteString("\t\"MoLingConfig\":\n")
 	bf.WriteString(fmt.Sprintf("\t%s,\n", mlConfigJson))
@@ -93,7 +94,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		if ok {
 			err = srv.LoadConfig(cfg)
 			if err != nil {
-				return fmt.Errorf("Error loading config for service %s: %v\n", srv.Name(), err)
+				return fmt.Errorf("Error loading config for service %s: %w\n", srv.Name(), err)
 			}
 		} else {
 			logger.Debug().Str("service", string(srv.Name())).Msg("Service not found in config, using default config")
@@ -101,7 +102,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		// srv Init
 		err = srv.Init()
 		if err != nil {
-			return fmt.Errorf("Error initializing service %s: %v\n", srv.Name(), err)
+			return fmt.Errorf("Error initializing service %s: %w\n", srv.Name(), err)
 		}
 		if !first {
 			bf.WriteString(",\n")
@@ -121,7 +122,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	// 格式化 JSON
 	formattedJson, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Error marshaling JSON: %v\n", err)
+		return fmt.Errorf("Error marshaling JSON: %w\n", err)
 	}
 
 	// 如果不存在配置文件
@@ -129,7 +130,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		logger.Info().Msgf("Configuration file %s does not exist. Creating a new one.", configFilePath)
 		err = os.WriteFile(configFilePath, formattedJson, 0644)
 		if err != nil {
-			return fmt.Errorf("Error writing configuration file: %v\n", err)
+			return fmt.Errorf("Error writing configuration file: %w\n", err)
 		}
 		logger.Info().Msgf("Configuration file %s created successfully.", configFilePath)
 	}

@@ -20,11 +20,12 @@ import (
 	"context"
 	"sync"
 
-	"github.com/gojue/moling/pkg/config"
-	"github.com/gojue/moling/pkg/utils"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/zerolog"
+
+	"github.com/gojue/moling/pkg/config"
+	"github.com/gojue/moling/pkg/utils"
 )
 
 type PromptEntry struct {

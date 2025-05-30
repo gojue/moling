@@ -23,8 +23,9 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"github.com/rs/zerolog"
 	"os"
+
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -118,7 +119,6 @@ func (c *Manager) SetupConfig() {
 		}
 		c.logger.Info().Str("Client Name", name).Msgf("Successfully added config to %s", path)
 	}
-	return
 }
 
 // appendConfig appends the mlMCPConfig to the client config.

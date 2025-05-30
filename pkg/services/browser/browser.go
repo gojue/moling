@@ -28,12 +28,13 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
+
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -129,7 +130,7 @@ func (bs *BrowserServer) Init() error {
 	pe := abstract.PromptEntry{
 		PromptVar: mcp.Prompt{
 			Name:        "browser_prompt",
-			Description: fmt.Sprintf("Get the relevant functions and prompts of the Browser MCP Server."),
+			Description: "Get the relevant functions and prompts of the Browser MCP Server",
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
 		HandlerFunc: bs.handlePrompt,
@@ -295,7 +296,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	// 处理浏览器提示
 	return &mcp.GetPromptResult{
-		Description: fmt.Sprintf(""),
+		Description: "",
 		Messages: []mcp.PromptMessage{
 			{
 				Role: mcp.RoleUser,

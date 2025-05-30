@@ -21,9 +21,10 @@
 package client
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 func TestClientManager_ListClient(t *testing.T) {

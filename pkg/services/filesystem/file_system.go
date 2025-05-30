@@ -28,12 +28,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
+
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -100,7 +101,7 @@ func (fs *FilesystemServer) Init() error {
 	pe := abstract.PromptEntry{
 		PromptVar: mcp.Prompt{
 			Name:        "filesystem_prompt",
-			Description: fmt.Sprintf("Get the relevant functions and prompts of the FileSystem MCP Server."),
+			Description: "Get the relevant functions and prompts of the FileSystem MCP Server.",
 		},
 		HandlerFunc: fs.handlePrompt,
 	}
@@ -191,7 +192,7 @@ func (fs *FilesystemServer) Init() error {
 // handlePrompt handles the prompt request for the FilesystemServer
 func (fs *FilesystemServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	return &mcp.GetPromptResult{
-		Description: fmt.Sprintf(""),
+		Description: "",
 		Messages: []mcp.PromptMessage{
 			{
 				Role: mcp.RoleUser,

@@ -21,8 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gojue/moling/pkg/config"
 	"github.com/rs/zerolog"
+
+	"github.com/gojue/moling/pkg/config"
 )
 
 type MoLingServerType string

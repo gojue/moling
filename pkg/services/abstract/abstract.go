@@ -19,10 +19,11 @@ package abstract
 import (
 	"context"
 
-	"github.com/gojue/moling/pkg/comm"
-	"github.com/gojue/moling/pkg/config"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/config"
 )
 
 type ServiceFactory func(ctx context.Context) (Service, error)
