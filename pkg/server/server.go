@@ -104,12 +104,12 @@ func (m *MoLingServer) loadService(srv abstract.Service) error {
 func (m *MoLingServer) Serve() error {
 	mLogger := log.New(m.logger, m.mlConfig.ServerName, 0)
 	if m.listenAddr != "" {
-		ltnAddr := fmt.Sprintf("http://%m", strings.TrimPrefix(m.listenAddr, "http://"))
+		ltnAddr := fmt.Sprintf("http://%s", strings.TrimPrefix(m.listenAddr, "http://"))
 		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 		multi := zerolog.MultiLevelWriter(consoleWriter, m.logger)
 		m.logger = zerolog.New(multi).With().Timestamp().Logger()
 		m.logger.Info().Str("listenAddr", m.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
-		m.logger.Warn().Msgf("The SSE server URL must be: %m. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
+		m.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
 		return server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr)).Start(m.listenAddr)
 	}
 	m.logger.Info().Msg("Starting STDIO server")
