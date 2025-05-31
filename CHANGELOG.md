@@ -1,9 +1,19 @@
+# v0.4.0 (2025-05-31)
+
+## What's Changed
+
+**Full Changelog**: https://github.com/gojue/moling/compare/v0.3.2...v0.4.0
+<hr>
+
 # v0.3.2 (2025-05-20)
 
 ## What's Changed
 
+* feat: update command arguments and add new client configurations for Trae and Trae CN by @cfc4n
+  in https://github.com/gojue/moling/pull/35
 * feat: update command arguments and improve logging for service initialization by @cfc4n
-  in [#37](https://github.com/gojue/moling/pull/37)
+  in https://github.com/gojue/moling/pull/37
+
 
 **Full Changelog**: https://github.com/gojue/moling/compare/v0.3.1...v0.3.2
 <hr>
