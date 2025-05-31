@@ -23,9 +23,9 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 0
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          args: --disable-all -E errcheck -E staticcheck
+          version: v2.1
           skip-cache: true
           problem-matchers: true
       - name: Test (go test)
