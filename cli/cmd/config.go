@@ -59,13 +59,13 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	// 当前配置文件检测
 	hasConfig := false
 	var nowConfig []byte
-	nowConfigJson := make(map[string]interface{})
+	nowConfigJSON := make(map[string]any)
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
 		hasConfig = true
 	}
 	if hasConfig {
-		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		err = json.Unmarshal(nowConfig, &nowConfigJSON)
 		if err != nil {
 			return fmt.Errorf("error unmarshaling JSON: %w, payload:%s", err, string(nowConfig))
 		}
@@ -84,7 +84,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	first := true
 	for srvName, nsv := range services.ServiceList() {
 		// 获取服务对应的配置
-		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
+		cfg, ok := nowConfigJSON[string(srvName)].(map[string]any)
 
 		srv, err := nsv(ctx)
 		if err != nil {
@@ -113,7 +113,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	}
 	bf.WriteString("}\n")
 	// 解析原始 JSON 字符串
-	var data interface{}
+	var data any
 	err = json.Unmarshal(bf.Bytes(), &data)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling JSON: %w, payload:%s", err, bf.String())

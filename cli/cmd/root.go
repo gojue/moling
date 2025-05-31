@@ -174,7 +174,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	mlConfig.SetLogger(loger)
 	var err error
 	var nowConfig []byte
-	var nowConfigJson map[string]interface{}
+	var nowConfigJSON map[string]any
 
 	// 增加实例重复运行检测
 	pidFilePath := filepath.Join(mlConfig.BasePath, MLPidName)
@@ -188,7 +188,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
-		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		err = json.Unmarshal(nowConfig, &nowConfigJSON)
 		if err != nil {
 			return fmt.Errorf("error unmarshaling JSON: %w, config file:%s", err, configFilePath)
 		}
@@ -212,7 +212,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 			}
 			loger.Debug().Str("moduleName", string(srvName)).Msgf("starting %s service", srvName)
 		}
-		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
+		cfg, ok := nowConfigJSON[string(srvName)].(map[string]any)
 		srv, err := nsv(ctxNew)
 		if err != nil {
 			loger.Error().Err(err).Msgf("failed to create service %s", srv.Name())

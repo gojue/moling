@@ -80,7 +80,7 @@ func TestClientManager_ListClient(t *testing.T) {
 		t.Fatalf("Expected no error, got %w", err)
 	}
 
-	var resultMap map[string]interface{}
+	var resultMap map[string]any
 	err = json.Unmarshal(result, &resultMap)
 	if err != nil {
 		t.Fatalf("Expected valid JSON, got error %w", err)

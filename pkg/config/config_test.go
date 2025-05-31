@@ -41,11 +41,11 @@ func TestConfigLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read config file: %w", err)
 	}
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
 		t.Fatalf("Failed to unmarshal JSON: %w", err)
 	}
-	mlConfig, ok := jsonMap["MoLingConfig"].(map[string]interface{})
+	mlConfig, ok := jsonMap["MoLingConfig"].(map[string]any)
 	if !ok {
 		t.Fatalf("failed to parse MoLingConfig from JSON")
 	}

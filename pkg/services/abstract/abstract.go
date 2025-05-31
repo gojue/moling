@@ -45,7 +45,7 @@ type Service interface {
 	// Config returns the configuration of the service as a string.
 	Config() string
 	// LoadConfig loads the configuration for the service from a map.
-	LoadConfig(jsonData map[string]interface{}) error
+	LoadConfig(jsonData map[string]any) error
 
 	// Init initializes the service with the given context and configuration.
 	Init() error

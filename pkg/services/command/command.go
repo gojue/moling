@@ -201,7 +201,7 @@ func (cs *CommandServer) Close() error {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (cs *CommandServer) LoadConfig(jsonData map[string]interface{}) error {
+func (cs *CommandServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(cs.config, jsonData)
 	if err != nil {
 		return err

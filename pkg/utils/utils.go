@@ -53,7 +53,7 @@ func StringInSlice(s string, modules []string) bool {
 }
 
 // MergeJSONToStruct 将JSON中的字段合并到结构体中
-func MergeJSONToStruct(target interface{}, jsonMap map[string]interface{}) error {
+func MergeJSONToStruct(target any, jsonMap map[string]any) error {
 	// 获取目标结构体的反射值
 	val := reflect.ValueOf(target).Elem()
 	typ := val.Type()

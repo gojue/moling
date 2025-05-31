@@ -445,7 +445,7 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 	if !ok {
 		return mcp.NewToolResultError("script must be a string"), nil
 	}
-	var result interface{}
+	var result any
 	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(script, &result))
@@ -480,7 +480,7 @@ func (bs *BrowserServer) Name() comm.MoLingServerType {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (bs *BrowserServer) LoadConfig(jsonData map[string]interface{}) error {
+func (bs *BrowserServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(bs.config, jsonData)
 	if err != nil {
 		return err

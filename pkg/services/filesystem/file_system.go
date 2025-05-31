@@ -1033,7 +1033,7 @@ func (fs *FilesystemServer) Close() error {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (fs *FilesystemServer) LoadConfig(jsonData map[string]interface{}) error {
+func (fs *FilesystemServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(fs.config, jsonData)
 	if err != nil {
 		return err

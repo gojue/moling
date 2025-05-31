@@ -124,13 +124,13 @@ func (c *Manager) SetupConfig() {
 // appendConfig appends the mlMCPConfig to the client config.
 func (c *Manager) appendConfig(name string, payload []byte) ([]byte, error) {
 	var err error
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	var jsonBytes []byte
 	err = json.Unmarshal(payload, &jsonMap)
 	if err != nil {
 		return nil, err
 	}
-	jsonMcpServer, ok := jsonMap[MCPServersKey].(map[string]interface{})
+	jsonMcpServer, ok := jsonMap[MCPServersKey].(map[string]any)
 	if !ok {
 		return nil, errors.New("MCPServersKey not found in JSON")
 	}
