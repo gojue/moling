@@ -43,7 +43,7 @@ type MoLingConfig struct {
 	Description string // Description of the MCP Server, default: CliDescription
 	Command     string //	Command to start the MCP Server, STDIO mode only,  default: CliName
 	Args        string // Arguments to pass to the command, STDIO mode only, default: empty
-	BaseUrl     string // BaseUrl , SSE mode only.
+	BaseURL     string // BaseURL , SSE mode only.
 	ServerName  string // ServerName MCP ServerName, add to the MCP Client config
 	logger      zerolog.Logger
 }

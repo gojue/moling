@@ -84,14 +84,14 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 	defer cancel()
 	err := chromedp.Run(rctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		t := chromedp.FromContext(ctx).Target
-		params := map[string]interface{}{
+		params := map[string]any{
 			"url":       url,
 			"line":      int(line),
 			"column":    int(column),
 			"condition": condition,
 		}
 
-		var result map[string]interface{}
+		var result map[string]any
 		// 使用Execute方法执行Debugger.setBreakpoint命令
 		if err := t.Execute(ctx, "Debugger.setBreakpoint", params, &result); err != nil {
 			return err
@@ -106,7 +106,7 @@ func (bs *BrowserServer) handleSetBreakpoint(ctx context.Context, request mcp.Ca
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to set breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to set breakpoint: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint set with ID: %s", breakpointID)), nil
 }
@@ -123,13 +123,13 @@ func (bs *BrowserServer) handleRemoveBreakpoint(ctx context.Context, request mcp
 	err := chromedp.Run(rctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		t := chromedp.FromContext(ctx).Target
 		// 使用Execute方法执行Debugger.removeBreakpoint命令
-		return t.Execute(ctx, "Debugger.removeBreakpoint", map[string]interface{}{
+		return t.Execute(ctx, "Debugger.removeBreakpoint", map[string]any{
 			"breakpointId": breakpointID,
 		}, nil)
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to remove breakpoint: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to remove breakpoint: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Breakpoint %s removed", breakpointID)), nil
 }
@@ -145,7 +145,7 @@ func (bs *BrowserServer) handlePause(ctx context.Context, request mcp.CallToolRe
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to pause execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to pause execution: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText("JavaScript execution paused"), nil
 }
@@ -161,14 +161,14 @@ func (bs *BrowserServer) handleResume(ctx context.Context, request mcp.CallToolR
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to resume execution: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to resume execution: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText("JavaScript execution resumed"), nil
 }
 
 // handleStepOver handles stepping over the next line of JavaScript code in the browser.
 func (bs *BrowserServer) handleGetCallstack(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	var callstack interface{}
+	var callstack any
 	rctx, cancel := context.WithCancel(bs.Context)
 	defer cancel()
 	err := chromedp.Run(rctx, chromedp.ActionFunc(func(ctx context.Context) error {
@@ -178,12 +178,12 @@ func (bs *BrowserServer) handleGetCallstack(ctx context.Context, request mcp.Cal
 	}))
 
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to get call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to get call stack: %s", err.Error())), nil
 	}
 
 	callstackJSON, err := json.Marshal(callstack)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal call stack: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal call stack: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Current call stack: %s", string(callstackJSON))), nil

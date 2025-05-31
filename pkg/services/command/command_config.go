@@ -111,7 +111,7 @@ func (cc *CommandConfig) Check() error {
 	if cc.PromptFile != "" {
 		read, err := os.ReadFile(cc.PromptFile)
 		if err != nil {
-			return fmt.Errorf("failed to read prompt file:%s, error: %v", cc.PromptFile, err)
+			return fmt.Errorf("failed to read prompt file:%s, error: %w", cc.PromptFile, err)
 		}
 		cc.prompt = string(read)
 	}

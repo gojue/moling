@@ -1,0 +1,69 @@
+# This configuration file is not a recommendation.
+#
+# We intentionally use a limited set of linters.
+# This configuration file is used with different version of golangci-lint to avoid regressions:
+# the linters can change between version,
+# their configuration may be not compatible or their reports can be different,
+# and this can break some of our tests.
+# Also, some linters are not relevant for the project (e.g. linters related to SQL).
+#
+# We have specific constraints, so we use a specific configuration.
+#
+# See the file `.golangci.reference.yml` to have a list of all available configuration options.
+
+version: "2"
+
+linters:
+  default: none
+  # This list of linters is not a recommendation (same thing for all this configuration file).
+  # We intentionally use a limited set of linters.
+  # See the comment on top of this file.
+  enable:
+    - errcheck
+    - staticcheck
+    - errorlint
+
+  settings:
+    errorlint:
+      asserts: false
+    staticcheck:
+      checks:
+        # Invalid regular expression.
+        # https://staticcheck.dev/docs/checks/#SA1000
+        - all
+        - "-ST1000"
+        - "-S1023"
+        - "-S1005"
+        - "-QF1004"
+
+  exclusions:
+    paths:
+      - dist/
+      - docs/
+      - tests/
+      - bin/
+      - images/
+      - install/
+      - utils/
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+    goimports:
+      local-prefixes:
+        - github.com/gojue/moling
+  exclusions:
+    paths:
+      - dist/
+      - docs/
+      - tests/
+      - bin/
+      - images/
+      - install/
+      - utils/

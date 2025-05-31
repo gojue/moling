@@ -23,8 +23,9 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"github.com/rs/zerolog"
 	"os"
+
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -40,7 +41,7 @@ type MCPServerConfig struct {
 	IsActive    bool     `json:"isActive"`          // Is the MCP Server active
 	Command     string   `json:"command,omitempty"` // Command to start the MCP Server, STDIO mode only
 	Args        []string `json:"args,omitempty"`    // Arguments to pass to the command, STDIO mode only
-	BaseUrl     string   `json:"baseUrl,omitempty"` // Base URL of the MCP Server, SSE mode only
+	BaseURL     string   `json:"baseUrl,omitempty"` // Base URL of the MCP Server, SSE mode only
 	TimeOut     uint16   `json:"timeout,omitempty"` // Timeout for the MCP Server, default is 300 seconds
 	ServerName  string
 }
@@ -52,7 +53,7 @@ func NewMCPServerConfig(description string, command string, srvName string) MCPS
 		IsActive:    true,
 		Command:     command,
 		Args:        []string{"-m", "Browser"},
-		BaseUrl:     "",
+		BaseURL:     "",
 		ServerName:  srvName,
 		TimeOut:     300,
 	}
@@ -118,19 +119,18 @@ func (c *Manager) SetupConfig() {
 		}
 		c.logger.Info().Str("Client Name", name).Msgf("Successfully added config to %s", path)
 	}
-	return
 }
 
 // appendConfig appends the mlMCPConfig to the client config.
 func (c *Manager) appendConfig(name string, payload []byte) ([]byte, error) {
 	var err error
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	var jsonBytes []byte
 	err = json.Unmarshal(payload, &jsonMap)
 	if err != nil {
 		return nil, err
 	}
-	jsonMcpServer, ok := jsonMap[MCPServersKey].(map[string]interface{})
+	jsonMcpServer, ok := jsonMap[MCPServersKey].(map[string]any)
 	if !ok {
 		return nil, errors.New("MCPServersKey not found in JSON")
 	}
@@ -151,7 +151,7 @@ func (c *Manager) checkExist(path string) bool {
 			c.logger.Debug().Msgf("Client config file %s does not exist", path)
 			return false
 		}
-		c.logger.Info().Msgf("check file failed, error:%v", err)
+		c.logger.Info().Msgf("check file failed, error:%s", err.Error())
 		return false
 	}
 	return true

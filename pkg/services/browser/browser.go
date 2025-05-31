@@ -28,12 +28,13 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
+
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -81,11 +82,11 @@ func (bs *BrowserServer) Init() error {
 	// Initialize the browser server
 	err := bs.initBrowser(bs.config.BrowserDataPath)
 	if err != nil {
-		return fmt.Errorf("failed to initialize browser: %v", err)
+		return fmt.Errorf("failed to initialize browser: %w", err)
 	}
 	err = utils.CreateDirectory(bs.config.DataPath)
 	if err != nil {
-		return fmt.Errorf("failed to create data directory: %v", err)
+		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	// Create a new context for the browser
@@ -129,7 +130,7 @@ func (bs *BrowserServer) Init() error {
 	pe := abstract.PromptEntry{
 		PromptVar: mcp.Prompt{
 			Name:        "browser_prompt",
-			Description: fmt.Sprintf("Get the relevant functions and prompts of the Browser MCP Server."),
+			Description: "Get the relevant functions and prompts of the Browser MCP Server",
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
 		HandlerFunc: bs.handlePrompt,
@@ -267,7 +268,7 @@ func (bs *BrowserServer) Init() error {
 func (bs *BrowserServer) initBrowser(userDataDir string) error {
 	_, err := os.Stat(userDataDir)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to stat user data directory: %v", err)
+		return fmt.Errorf("failed to stat user data directory: %w", err)
 	}
 
 	// Check if the directory exists, if it does, we can reuse it
@@ -279,7 +280,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 			bs.Logger.Debug().Msg("Browser is already running, removing SingletonLock")
 			err = os.RemoveAll(singletonLock)
 			if err != nil {
-				bs.Logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %v", err)
+				bs.Logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %s", err.Error())
 			}
 		}
 		return nil
@@ -287,7 +288,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 	// Create the directory
 	err = os.MkdirAll(userDataDir, 0755)
 	if err != nil {
-		return fmt.Errorf("failed to create user data directory: %v", err)
+		return fmt.Errorf("failed to create user data directory: %w", err)
 	}
 	return nil
 }
@@ -295,7 +296,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 func (bs *BrowserServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	// 处理浏览器提示
 	return &mcp.GetPromptResult{
-		Description: fmt.Sprintf(""),
+		Description: "",
 		Messages: []mcp.PromptMessage{
 			{
 				Role: mcp.RoleUser,
@@ -318,7 +319,7 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 
 	err := chromedp.Run(bs.Context, chromedp.Navigate(url))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Navigated to %s", url)), nil
 }
@@ -349,13 +350,13 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 		err = chromedp.Run(bs.Context, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible))
 	}
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %s", err.Error())), nil
 	}
 
 	newName := filepath.Join(bs.config.DataPath, fmt.Sprintf("%s_%d.png", strings.TrimRight(name, ".png"), rand.Int()))
 	err = os.WriteFile(newName, buf, 0644)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to save screenshot: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to save screenshot: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Screenshot saved to:%s", newName)), nil
 }
@@ -375,7 +376,7 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 		chromedp.Click(selector, chromedp.NodeVisible),
 	)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to click element: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to click element: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Clicked element %s", selector)), nil
 }
@@ -397,7 +398,7 @@ func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolReq
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Filled input %s with value %s", selector, value)), nil
 }
@@ -416,7 +417,7 @@ func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolR
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SetValue(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to select value: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to select value: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Selected value %s for element %s", value, selector)), nil
 }
@@ -433,7 +434,7 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
 }
@@ -444,12 +445,12 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 	if !ok {
 		return mcp.NewToolResultError("script must be a string"), nil
 	}
-	var result interface{}
+	var result any
 	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(script, &result))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to execute script: %v", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to execute script: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Script executed successfully: %v", result)), nil
 }
@@ -479,7 +480,7 @@ func (bs *BrowserServer) Name() comm.MoLingServerType {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (bs *BrowserServer) LoadConfig(jsonData map[string]interface{}) error {
+func (bs *BrowserServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(bs.config, jsonData)
 	if err != nil {
 		return err

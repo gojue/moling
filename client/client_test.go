@@ -21,9 +21,10 @@
 package client
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 func TestClientManager_ListClient(t *testing.T) {
@@ -76,13 +77,13 @@ func TestClientManager_ListClient(t *testing.T) {
 
 	result, err := cm.appendConfig("TestClient", payload)
 	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
+		t.Fatalf("Expected no error, got %s", err.Error())
 	}
 
-	var resultMap map[string]interface{}
+	var resultMap map[string]any
 	err = json.Unmarshal(result, &resultMap)
 	if err != nil {
-		t.Fatalf("Expected valid JSON, got error %v", err)
+		t.Fatalf("Expected valid JSON, got error %s", err.Error())
 	}
 
 	if resultMap["existingKey"] != "existingValue" {
@@ -106,9 +107,11 @@ func TestClientManager_checkExist(t *testing.T) {
 	// Test with an existing file
 	file, err := os.CreateTemp("", "testfile")
 	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
+		t.Fatalf("Failed to create temp file: %s", err.Error())
 	}
-	defer os.Remove(file.Name())
+	defer func() {
+		_ = os.Remove(file.Name())
+	}()
 	t.Logf("Created temp file: %s", file.Name())
 	exists = cm.checkExist(file.Name())
 	if !exists {

@@ -21,11 +21,13 @@
 package cmd
 
 import (
-	"github.com/gojue/moling/client"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
+
+	"github.com/gojue/moling/client"
 )
 
 var clientCmd = &cobra.Command{

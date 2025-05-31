@@ -92,8 +92,8 @@ func TestAllowCmd(t *testing.T) {
 }
 
 // 将 struct 转换为 map
-func StructToMap(obj interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func StructToMap(obj any) map[string]any {
+	result := make(map[string]any)
 	val := reflect.ValueOf(obj)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()

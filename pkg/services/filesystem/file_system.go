@@ -28,12 +28,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
+
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -85,7 +86,7 @@ func NewFilesystemServer(ctx context.Context) (abstract.Service, error) {
 
 	err = fs.InitResources()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize filesystem server: %v", err)
+		return nil, fmt.Errorf("failed to initialize filesystem server: %w", err)
 	}
 
 	return fs, nil
@@ -100,7 +101,7 @@ func (fs *FilesystemServer) Init() error {
 	pe := abstract.PromptEntry{
 		PromptVar: mcp.Prompt{
 			Name:        "filesystem_prompt",
-			Description: fmt.Sprintf("Get the relevant functions and prompts of the FileSystem MCP Server."),
+			Description: "Get the relevant functions and prompts of the FileSystem MCP Server.",
 		},
 		HandlerFunc: fs.handlePrompt,
 	}
@@ -191,7 +192,7 @@ func (fs *FilesystemServer) Init() error {
 // handlePrompt handles the prompt request for the FilesystemServer
 func (fs *FilesystemServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	return &mcp.GetPromptResult{
-		Description: fmt.Sprintf(""),
+		Description: "",
 		Messages: []mcp.PromptMessage{
 			{
 				Role: mcp.RoleUser,
@@ -1032,7 +1033,7 @@ func (fs *FilesystemServer) Close() error {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (fs *FilesystemServer) LoadConfig(jsonData map[string]interface{}) error {
+func (fs *FilesystemServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(fs.config, jsonData)
 	if err != nil {
 		return err

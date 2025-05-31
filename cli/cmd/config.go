@@ -25,10 +25,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gojue/moling/pkg/comm"
-	"github.com/gojue/moling/pkg/services"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+
+	"github.com/gojue/moling/pkg/comm"
+	"github.com/gojue/moling/pkg/services"
 )
 
 var configCmd = &cobra.Command{
@@ -58,15 +59,15 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	// 当前配置文件检测
 	hasConfig := false
 	var nowConfig []byte
-	nowConfigJson := make(map[string]interface{})
+	nowConfigJSON := make(map[string]any)
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
 		hasConfig = true
 	}
 	if hasConfig {
-		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		err = json.Unmarshal(nowConfig, &nowConfigJSON)
 		if err != nil {
-			return fmt.Errorf("Error unmarshaling JSON: %v, payload:%s\n", err, string(nowConfig))
+			return fmt.Errorf("error unmarshaling JSON: %w, payload:%s", err, string(nowConfig))
 		}
 	}
 
@@ -74,16 +75,16 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	bf.WriteString("\n{\n")
 
 	// 写入GlobalConfig
-	mlConfigJson, err := json.Marshal(mlConfig)
+	mlConfigJSON, err := json.Marshal(mlConfig)
 	if err != nil {
-		return fmt.Errorf("Error marshaling GlobalConfig: %v\n", err)
+		return fmt.Errorf("error marshaling GlobalConfig: %w", err)
 	}
 	bf.WriteString("\t\"MoLingConfig\":\n")
-	bf.WriteString(fmt.Sprintf("\t%s,\n", mlConfigJson))
+	bf.WriteString(fmt.Sprintf("\t%s,\n", mlConfigJSON))
 	first := true
 	for srvName, nsv := range services.ServiceList() {
 		// 获取服务对应的配置
-		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
+		cfg, ok := nowConfigJSON[string(srvName)].(map[string]any)
 
 		srv, err := nsv(ctx)
 		if err != nil {
@@ -93,7 +94,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		if ok {
 			err = srv.LoadConfig(cfg)
 			if err != nil {
-				return fmt.Errorf("Error loading config for service %s: %v\n", srv.Name(), err)
+				return fmt.Errorf("error loading config for service %s: %w", srv.Name(), err)
 			}
 		} else {
 			logger.Debug().Str("service", string(srv.Name())).Msg("Service not found in config, using default config")
@@ -101,7 +102,7 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 		// srv Init
 		err = srv.Init()
 		if err != nil {
-			return fmt.Errorf("Error initializing service %s: %v\n", srv.Name(), err)
+			return fmt.Errorf("error initializing service %s: %w", srv.Name(), err)
 		}
 		if !first {
 			bf.WriteString(",\n")
@@ -112,31 +113,31 @@ func ConfigCommandFunc(command *cobra.Command, args []string) error {
 	}
 	bf.WriteString("}\n")
 	// 解析原始 JSON 字符串
-	var data interface{}
+	var data any
 	err = json.Unmarshal(bf.Bytes(), &data)
 	if err != nil {
-		return fmt.Errorf("Error unmarshaling JSON: %v, payload:%s\n", err, bf.String())
+		return fmt.Errorf("error unmarshaling JSON: %w, payload:%s", err, bf.String())
 	}
 
 	// 格式化 JSON
-	formattedJson, err := json.MarshalIndent(data, "", "  ")
+	formattedJSON, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Error marshaling JSON: %v\n", err)
+		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
 	// 如果不存在配置文件
 	if !hasConfig {
 		logger.Info().Msgf("Configuration file %s does not exist. Creating a new one.", configFilePath)
-		err = os.WriteFile(configFilePath, formattedJson, 0644)
+		err = os.WriteFile(configFilePath, formattedJSON, 0644)
 		if err != nil {
-			return fmt.Errorf("Error writing configuration file: %v\n", err)
+			return fmt.Errorf("error writing configuration file: %w", err)
 		}
 		logger.Info().Msgf("Configuration file %s created successfully.", configFilePath)
 	}
 	logger.Info().Str("config", configFilePath).Msg("Current loaded configuration file path")
 	logger.Info().Msg("You can modify the configuration file to change the settings.")
 	if !initial {
-		logger.Info().Msgf("Configuration details: \n%s\n", formattedJson)
+		logger.Info().Msgf("Configuration details: \n%s\n", formattedJSON)
 	}
 	return nil
 }

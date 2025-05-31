@@ -24,12 +24,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/rs/zerolog"
+
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rs/zerolog"
 )
 
 var (
@@ -87,7 +88,7 @@ func (cs *CommandServer) Init() error {
 	pe := abstract.PromptEntry{
 		PromptVar: mcp.Prompt{
 			Name:        "command_prompt",
-			Description: fmt.Sprintf("get command prompt"),
+			Description: "get command prompt",
 			//Arguments:   make([]mcp.PromptArgument, 0),
 		},
 		HandlerFunc: cs.handlePrompt,
@@ -106,7 +107,7 @@ func (cs *CommandServer) Init() error {
 
 func (cs *CommandServer) handlePrompt(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 	return &mcp.GetPromptResult{
-		Description: fmt.Sprintf(""),
+		Description: "",
 		Messages: []mcp.PromptMessage{
 			{
 				Role: mcp.RoleUser,
@@ -200,7 +201,7 @@ func (cs *CommandServer) Close() error {
 }
 
 // LoadConfig loads the configuration from a JSON object.
-func (cs *CommandServer) LoadConfig(jsonData map[string]interface{}) error {
+func (cs *CommandServer) LoadConfig(jsonData map[string]any) error {
 	err := utils.MergeJSONToStruct(cs.config, jsonData)
 	if err != nil {
 		return err

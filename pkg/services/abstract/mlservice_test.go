@@ -27,7 +27,7 @@ func TestMLService_AddResource(t *testing.T) {
 	service := &MLService{}
 	err := service.InitResources()
 	if err != nil {
-		t.Fatalf("Failed to initialize MLService: %v", err)
+		t.Fatalf("Failed to initialize MLService: %s", err.Error())
 	}
 	resource := mcp.Resource{Name: "testResource"}
 	handler := func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
@@ -54,7 +54,7 @@ func TestMLService_AddResourceTemplate(t *testing.T) {
 	service := &MLService{}
 	err := service.InitResources()
 	if err != nil {
-		t.Fatalf("Failed to initialize MLService: %v", err)
+		t.Fatalf("Failed to initialize MLService: %s", err.Error())
 	}
 	template := mcp.ResourceTemplate{Name: "testTemplate"}
 	handler := func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
@@ -81,7 +81,7 @@ func TestMLService_AddPrompt(t *testing.T) {
 	service := &MLService{}
 	err := service.InitResources()
 	if err != nil {
-		t.Fatalf("Failed to initialize MLService: %v", err)
+		t.Fatalf("Failed to initialize MLService: %s", err.Error())
 	}
 	prompt := "testPrompt"
 	handler := func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
@@ -118,7 +118,7 @@ func TestMLService_AddTool(t *testing.T) {
 	service := &MLService{}
 	err := service.InitResources()
 	if err != nil {
-		t.Fatalf("Failed to initialize MLService: %v", err)
+		t.Fatalf("Failed to initialize MLService: %s", err.Error())
 	}
 	tool := mcp.Tool{Name: "testTool"}
 	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -148,7 +148,7 @@ func TestMLService_AddNotificationHandler(t *testing.T) {
 	service := &MLService{}
 	err := service.InitResources()
 	if err != nil {
-		t.Fatalf("Failed to initialize MLService: %v", err)
+		t.Fatalf("Failed to initialize MLService: %s", err.Error())
 	}
 	name := "testHandler"
 	handler := func(ctx context.Context, n mcp.JSONRPCNotification) {

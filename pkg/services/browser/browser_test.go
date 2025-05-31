@@ -34,121 +34,12 @@ func TestBrowserServer(t *testing.T) {
 	//}
 	logger, ctx, err := comm.InitTestEnv()
 	if err != nil {
-		t.Fatalf("Failed to initialize test environment: %v", err)
+		t.Fatalf("Failed to initialize test environment: %s", err.Error())
 	}
 	logger.Info().Msg("TestBrowserServer")
 
 	_, err = NewBrowserServer(ctx)
 	if err != nil {
-		t.Fatalf("Failed to create BrowserServer: %v", err)
+		t.Fatalf("Failed to create BrowserServer: %s", err.Error())
 	}
-
-	/*
-		t.Run("TestNavigate", func(t *testing.T) {
-			request := mcp.CallToolRequest{
-				Request: mcp.Request{
-					Method: "tools/call",
-				},
-			}
-			args = map[string]interface{}{
-				"url": "https://www.baidu.com",
-			}
-			result, err := bs.handleNavigate(ctx, request)
-			if err != nil {
-				t.Fatalf("handleNavigate failed: %v", err)
-			}
-			if result.Content[0].(mcp.TextContent).Text != "Navigated to https://www.example.com" {
-				t.Errorf("Unexpected result: %v", result.Content[0].(mcp.TextContent).Text)
-			}
-		})
-	*/
-	//
-	//t.Run("TestScreenshot", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"name": "test_screenshot",
-	//			},
-	//		},
-	//	}
-	//	_, err := bs.handleScreenshot(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleScreenshot failed: %v", err)
-	//	}
-	//})
-	//
-	//t.Run("TestClick", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"selector": "body",
-	//			},
-	//		},
-	//	}
-	//	_, err := bs.handleClick(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleClick failed: %v", err)
-	//	}
-	//})
-	//
-	//t.Run("TestFill", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"selector": "input[name='q']",
-	//				"value":    "test",
-	//			},
-	//		},
-	//	}
-	//	_, err := bs.handleFill(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleFill failed: %v", err)
-	//	}
-	//})
-	//
-	//t.Run("TestSelect", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"selector": "select[name='dropdown']",
-	//				"value":    "option1",
-	//			},
-	//		},
-	//	}
-	//	_, err := bs.handleSelect(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleSelect failed: %v", err)
-	//	}
-	//})
-	//
-	//t.Run("TestHover", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"selector": "body",
-	//			},
-	//		},
-	//	}
-	//	_, err := bs.handleHover(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleHover failed: %v", err)
-	//	}
-	//})
-	//
-	//t.Run("TestEvaluate", func(t *testing.T) {
-	//	request := mcp.CallToolRequest{
-	//		Params: mcp.ToolParams{
-	//			Arguments: map[string]interface{}{
-	//				"script": "document.title",
-	//			},
-	//		},
-	//	}
-	//	result, err := bs.handleEvaluate(ctx, request)
-	//	if err != nil {
-	//		t.Fatalf("handleEvaluate failed: %v", err)
-	//	}
-	//	if result.Content[0].(mcp.TextContent).Text == "" {
-	//		t.Errorf("Unexpected result: %v", result.Content[0].(mcp.TextContent).Text)
-	//	}
-	//})
 }

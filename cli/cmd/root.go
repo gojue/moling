@@ -29,6 +29,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
+
 	"github.com/gojue/moling/cli/cobrautl"
 	"github.com/gojue/moling/pkg/comm"
 	"github.com/gojue/moling/pkg/config"
@@ -36,8 +39,6 @@ import (
 	"github.com/gojue/moling/pkg/services"
 	"github.com/gojue/moling/pkg/services/abstract"
 	"github.com/gojue/moling/pkg/utils"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 )
 
 const (
@@ -161,7 +162,7 @@ func initLogger(mlDataPath string) zerolog.Logger {
 	// 初始化 RotateWriter
 	rw, err := utils.NewRotateWriter(logFile, MaxLogSize) // 512MB 阈值
 	if err != nil {
-		panic(fmt.Sprintf("failed to open log file %s: %v", logFile, err))
+		panic(fmt.Sprintf("failed to open log file %s: %s", logFile, err.Error()))
 	}
 	logger = zerolog.New(rw).With().Timestamp().Logger()
 	logger.Info().Uint32("MaxLogSize", MaxLogSize).Msgf("Log files are automatically rotated when they exceed the size threshold, and saved to %s.1 and %s.2 respectively", LogFileName, LogFileName)
@@ -173,7 +174,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	mlConfig.SetLogger(loger)
 	var err error
 	var nowConfig []byte
-	var nowConfigJson map[string]interface{}
+	var nowConfigJSON map[string]any
 
 	// 增加实例重复运行检测
 	pidFilePath := filepath.Join(mlConfig.BasePath, MLPidName)
@@ -187,9 +188,9 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 	loger.Info().Str("ServerName", MCPServerName).Str("version", GitVersion).Msg("start")
 	configFilePath := filepath.Join(mlConfig.BasePath, mlConfig.ConfigFile)
 	if nowConfig, err = os.ReadFile(configFilePath); err == nil {
-		err = json.Unmarshal(nowConfig, &nowConfigJson)
+		err = json.Unmarshal(nowConfig, &nowConfigJSON)
 		if err != nil {
-			return fmt.Errorf("Error unmarshaling JSON: %v, config file:%s\n", err, configFilePath)
+			return fmt.Errorf("error unmarshaling JSON: %w, config file:%s", err, configFilePath)
 		}
 	}
 	loger.Info().Str("config_file", configFilePath).Msg("load config file")
@@ -211,7 +212,7 @@ func mlsCommandFunc(command *cobra.Command, args []string) error {
 			}
 			loger.Debug().Str("moduleName", string(srvName)).Msgf("starting %s service", srvName)
 		}
-		cfg, ok := nowConfigJson[string(srvName)].(map[string]interface{})
+		cfg, ok := nowConfigJSON[string(srvName)].(map[string]any)
 		srv, err := nsv(ctxNew)
 		if err != nil {
 			loger.Error().Err(err).Msgf("failed to create service %s", srv.Name())
