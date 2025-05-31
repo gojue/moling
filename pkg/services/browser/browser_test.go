@@ -34,12 +34,12 @@ func TestBrowserServer(t *testing.T) {
 	//}
 	logger, ctx, err := comm.InitTestEnv()
 	if err != nil {
-		t.Fatalf("Failed to initialize test environment: %w", err)
+		t.Fatalf("Failed to initialize test environment: %s", err.Error())
 	}
 	logger.Info().Msg("TestBrowserServer")
 
 	_, err = NewBrowserServer(ctx)
 	if err != nil {
-		t.Fatalf("Failed to create BrowserServer: %w", err)
+		t.Fatalf("Failed to create BrowserServer: %s", err.Error())
 	}
 }

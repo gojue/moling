@@ -280,7 +280,7 @@ func (bs *BrowserServer) initBrowser(userDataDir string) error {
 			bs.Logger.Debug().Msg("Browser is already running, removing SingletonLock")
 			err = os.RemoveAll(singletonLock)
 			if err != nil {
-				bs.Logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %w", err)
+				bs.Logger.Error().Str("Lock", singletonLock).Msgf("Browser can't work due to failed removal of SingletonLock: %s", err.Error())
 			}
 		}
 		return nil
@@ -319,7 +319,7 @@ func (bs *BrowserServer) handleNavigate(ctx context.Context, request mcp.CallToo
 
 	err := chromedp.Run(bs.Context, chromedp.Navigate(url))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %w", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to navigate: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Navigated to %s", url)), nil
 }
@@ -350,13 +350,13 @@ func (bs *BrowserServer) handleScreenshot(ctx context.Context, request mcp.CallT
 		err = chromedp.Run(bs.Context, chromedp.Screenshot(selector, &buf, chromedp.NodeVisible))
 	}
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %w", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to take screenshot: %s", err.Error())), nil
 	}
 
 	newName := filepath.Join(bs.config.DataPath, fmt.Sprintf("%s_%d.png", strings.TrimRight(name, ".png"), rand.Int()))
 	err = os.WriteFile(newName, buf, 0644)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to save screenshot: %w", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to save screenshot: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Screenshot saved to:%s", newName)), nil
 }
@@ -376,7 +376,7 @@ func (bs *BrowserServer) handleClick(ctx context.Context, request mcp.CallToolRe
 		chromedp.Click(selector, chromedp.NodeVisible),
 	)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to click element: %w", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to click element: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Clicked element %s", selector)), nil
 }
@@ -398,7 +398,7 @@ func (bs *BrowserServer) handleFill(ctx context.Context, request mcp.CallToolReq
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SendKeys(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %w", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fill input field: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Filled input %s with value %s", selector, value)), nil
 }
@@ -417,7 +417,7 @@ func (bs *BrowserServer) handleSelect(ctx context.Context, request mcp.CallToolR
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.SetValue(selector, value, chromedp.NodeVisible))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to select value: %w", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to select value: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Selected value %s for element %s", value, selector)), nil
 }
@@ -434,7 +434,7 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %w", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Hovered over element %s, result:%t", selector, res)), nil
 }
@@ -450,7 +450,7 @@ func (bs *BrowserServer) handleEvaluate(ctx context.Context, request mcp.CallToo
 	defer cancelFunc()
 	err := chromedp.Run(runCtx, chromedp.Evaluate(script, &result))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Errorf("failed to execute script: %w", err).Error()), nil
+		return mcp.NewToolResultError(fmt.Errorf("failed to execute script: %s", err.Error()).Error()), nil
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Script executed successfully: %v", result)), nil
 }

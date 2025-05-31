@@ -42,7 +42,7 @@ func TestNewMLServer(t *testing.T) {
 	}
 	err := utils.CreateDirectory(mlConfig.BasePath)
 	if err != nil {
-		t.Errorf("Failed to create base directory: %w", err)
+		t.Errorf("Failed to create base directory: %s", err.Error())
 	}
 	for _, dirName := range mlDirectories {
 		err = utils.CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
@@ -52,7 +52,7 @@ func TestNewMLServer(t *testing.T) {
 	}
 	logger, ctx, err := comm.InitTestEnv()
 	if err != nil {
-		t.Fatalf("Failed to initialize test environment: %w", err)
+		t.Fatalf("Failed to initialize test environment: %s", err.Error())
 	}
 	logger.Info().Msg("TestBrowserServer")
 	mlConfig.SetLogger(logger)
@@ -60,22 +60,22 @@ func TestNewMLServer(t *testing.T) {
 	// Create a new server with the filesystem service
 	fs, err := filesystem.NewFilesystemServer(ctx)
 	if err != nil {
-		t.Errorf("Failed to create filesystem server: %w", err)
+		t.Errorf("Failed to create filesystem server: %s", err.Error())
 	}
 	err = fs.Init()
 	if err != nil {
-		t.Errorf("Failed to initialize filesystem server: %w", err)
+		t.Errorf("Failed to initialize filesystem server: %s", err.Error())
 	}
 	srvs := []abstract.Service{
 		fs,
 	}
 	srv, err := NewMoLingServer(ctx, srvs, mlConfig)
 	if err != nil {
-		t.Errorf("Failed to create server: %w", err)
+		t.Errorf("Failed to create server: %s", err.Error())
 	}
 	err = srv.Serve()
 	if err != nil {
-		t.Errorf("Failed to start server: %w", err)
+		t.Errorf("Failed to start server: %s", err.Error())
 	}
 	t.Logf("Server started successfully: %v", srv)
 }

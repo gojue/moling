@@ -77,13 +77,13 @@ func TestClientManager_ListClient(t *testing.T) {
 
 	result, err := cm.appendConfig("TestClient", payload)
 	if err != nil {
-		t.Fatalf("Expected no error, got %w", err)
+		t.Fatalf("Expected no error, got %s", err.Error())
 	}
 
 	var resultMap map[string]any
 	err = json.Unmarshal(result, &resultMap)
 	if err != nil {
-		t.Fatalf("Expected valid JSON, got error %w", err)
+		t.Fatalf("Expected valid JSON, got error %s", err.Error())
 	}
 
 	if resultMap["existingKey"] != "existingValue" {
@@ -107,7 +107,7 @@ func TestClientManager_checkExist(t *testing.T) {
 	// Test with an existing file
 	file, err := os.CreateTemp("", "testfile")
 	if err != nil {
-		t.Fatalf("Failed to create temp file: %w", err)
+		t.Fatalf("Failed to create temp file: %s", err.Error())
 	}
 	defer func() {
 		_ = os.Remove(file.Name())
