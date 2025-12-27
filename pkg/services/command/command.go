@@ -97,6 +97,8 @@ func (cs *CommandServer) Init() error {
 	cs.AddTool(mcp.NewTool(
 		"execute_command",
 		mcp.WithDescription("Execute a named command.Only support command execution on macOS and will strictly follow safety guidelines, ensuring that commands are safe and secure"),
+		mcp.WithTitleAnnotation("Execute Command"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("command",
 			mcp.Description("The command to execute"),
 			mcp.Required(),

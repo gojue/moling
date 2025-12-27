@@ -139,6 +139,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_navigate",
 		mcp.WithDescription("Navigate to a URL"),
+		mcp.WithTitleAnnotation("Navigate Browser"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("url",
 			mcp.Description("URL to navigate to"),
 			mcp.Required(),
@@ -147,6 +149,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_screenshot",
 		mcp.WithDescription("Take a screenshot of the current page or a specific element"),
+		mcp.WithTitleAnnotation("Take Screenshot"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("name",
 			mcp.Description("Name for the screenshot"),
 			mcp.Required(),
@@ -164,6 +168,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_click",
 		mcp.WithDescription("Click an element on the page"),
+		mcp.WithTitleAnnotation("Click Element"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("selector",
 			mcp.Description("CSS selector for element to click"),
 			mcp.Required(),
@@ -172,6 +178,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_fill",
 		mcp.WithDescription("Fill out an input field"),
+		mcp.WithTitleAnnotation("Fill Input"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("selector",
 			mcp.Description("CSS selector for input field"),
 			mcp.Required(),
@@ -184,6 +192,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_select",
 		mcp.WithDescription("Select an element on the page with Select tag"),
+		mcp.WithTitleAnnotation("Select Option"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("selector",
 			mcp.Description("CSS selector for element to select"),
 			mcp.Required(),
@@ -196,6 +206,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_hover",
 		mcp.WithDescription("Hover an element on the page"),
+		mcp.WithTitleAnnotation("Hover Element"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("selector",
 			mcp.Description("CSS selector for element to hover"),
 			mcp.Required(),
@@ -204,6 +216,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_evaluate",
 		mcp.WithDescription("Execute JavaScript in the browser console"),
+		mcp.WithTitleAnnotation("Evaluate JavaScript"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("script",
 			mcp.Description("JavaScript code to execute"),
 			mcp.Required(),
@@ -213,6 +227,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_debug_enable",
 		mcp.WithDescription("Enable JavaScript debugging"),
+		mcp.WithTitleAnnotation("Toggle Debugging"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithBoolean("enabled",
 			mcp.Description("Enable or disable debugging"),
 			mcp.Required(),
@@ -222,6 +238,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_set_breakpoint",
 		mcp.WithDescription("Set a JavaScript breakpoint"),
+		mcp.WithTitleAnnotation("Set Breakpoint"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("url",
 			mcp.Description("URL of the script"),
 			mcp.Required(),
@@ -241,6 +259,8 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_remove_breakpoint",
 		mcp.WithDescription("Remove a JavaScript breakpoint"),
+		mcp.WithTitleAnnotation("Remove Breakpoint"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("breakpointId",
 			mcp.Description("Breakpoint ID to remove"),
 			mcp.Required(),
@@ -250,16 +270,22 @@ func (bs *BrowserServer) Init() error {
 	bs.AddTool(mcp.NewTool(
 		"browser_pause",
 		mcp.WithDescription("Pause JavaScript execution"),
+		mcp.WithTitleAnnotation("Pause Execution"),
+		mcp.WithDestructiveHintAnnotation(true),
 	), bs.handlePause)
 
 	bs.AddTool(mcp.NewTool(
 		"browser_resume",
 		mcp.WithDescription("Resume JavaScript execution"),
+		mcp.WithTitleAnnotation("Resume Execution"),
+		mcp.WithDestructiveHintAnnotation(true),
 	), bs.handleResume)
 
 	bs.AddTool(mcp.NewTool(
 		"browser_get_callstack",
 		mcp.WithDescription("Get current call stack when paused"),
+		mcp.WithTitleAnnotation("Get Call Stack"),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), bs.handleGetCallstack)
 	return nil
 }
