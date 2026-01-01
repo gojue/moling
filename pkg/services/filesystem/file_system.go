@@ -110,6 +110,8 @@ func (fs *FilesystemServer) Init() error {
 	// Register tool handlers
 	fs.AddTool(mcp.NewTool("read_file",
 		mcp.WithDescription("Read the complete contents of a file from the file system."),
+		mcp.WithTitleAnnotation("Read File"),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative path to the file to read"),
 			mcp.Required(),
@@ -119,6 +121,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"write_file",
 		mcp.WithDescription("Create a new file or overwrite an existing file with new content."),
+		mcp.WithTitleAnnotation("Write File"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative Path where to write the file"),
 			mcp.Required(),
@@ -132,6 +136,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"list_directory",
 		mcp.WithDescription("Get a detailed listing of all files and directories in a specified path."),
+		mcp.WithTitleAnnotation("List Directory"),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative Path of the directory to list"),
 			mcp.Required(),
@@ -141,6 +147,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"create_directory",
 		mcp.WithDescription("Create a new directory or ensure a directory exists."),
+		mcp.WithTitleAnnotation("Create Directory"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative Path of the directory to create"),
 			mcp.Required(),
@@ -150,6 +158,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"move_file",
 		mcp.WithDescription("Move or rename files and directories."),
+		mcp.WithTitleAnnotation("Move File"),
+		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("source",
 			mcp.Description("Relative Source path of the file or directory"),
 			mcp.Required(),
@@ -163,6 +173,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"search_files",
 		mcp.WithDescription("Recursively search for files and directories matching a pattern."),
+		mcp.WithTitleAnnotation("Search Files"),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative Starting path for the search"),
 			mcp.Required(),
@@ -176,6 +188,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"get_file_info",
 		mcp.WithDescription("Retrieve detailed metadata about a file or directory."),
+		mcp.WithTitleAnnotation("Get File Info"),
+		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithString("path",
 			mcp.Description("Relative Path to the file or directory"),
 			mcp.Required(),
@@ -185,6 +199,8 @@ func (fs *FilesystemServer) Init() error {
 	fs.AddTool(mcp.NewTool(
 		"list_allowed_directories",
 		mcp.WithDescription("Returns the list of directories that this server is allowed to access."),
+		mcp.WithTitleAnnotation("List Allowed Directories"),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), fs.handleListAllowedDirectories)
 	return nil
 }
