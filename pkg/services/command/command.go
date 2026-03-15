@@ -145,36 +145,78 @@ func (cs *CommandServer) handleExecuteCommand(ctx context.Context, request mcp.C
 	return mcp.NewToolResultText(output), nil
 }
 
+// shellInjectionPatterns are substrings that indicate potential command injection attempts.
+// Commands containing any of these patterns are rejected before allowlist evaluation.
+var shellInjectionPatterns = []string{";", "\n", "`", "$(", "${"}
+
 // isAllowedCommand checks if the command is allowed based on the configuration.
 func (cs *CommandServer) isAllowedCommand(command string) bool {
-	// 检查命令是否在允许的列表中
-	for _, allowed := range cs.config.allowedCommands {
-		if strings.HasPrefix(command, allowed) {
-			return true
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return false
+	}
+
+	// Reject commands containing shell injection metacharacters.
+	for _, pattern := range shellInjectionPatterns {
+		if strings.Contains(command, pattern) {
+			return false
 		}
 	}
 
-	// 如果命令包含管道符，进一步检查每个子命令
+	// Handle && (logical AND) — must be checked before single &.
+	if strings.Contains(command, "&&") {
+		parts := strings.Split(command, "&&")
+		for _, part := range parts {
+			if !cs.isAllowedCommand(strings.TrimSpace(part)) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Handle || (logical OR) — must be checked before single |.
+	if strings.Contains(command, "||") {
+		parts := strings.Split(command, "||")
+		for _, part := range parts {
+			if !cs.isAllowedCommand(strings.TrimSpace(part)) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Handle | (pipe).
 	if strings.Contains(command, "|") {
 		parts := strings.Split(command, "|")
 		for _, part := range parts {
-			part = strings.TrimSpace(part)
-			if !cs.isAllowedCommand(part) {
+			if !cs.isAllowedCommand(strings.TrimSpace(part)) {
 				return false
 			}
 		}
 		return true
 	}
 
+	// Handle & (background execution).
 	if strings.Contains(command, "&") {
 		parts := strings.Split(command, "&")
 		for _, part := range parts {
-			part = strings.TrimSpace(part)
-			if !cs.isAllowedCommand(part) {
+			if !cs.isAllowedCommand(strings.TrimSpace(part)) {
 				return false
 			}
 		}
 		return true
+	}
+
+	// Extract the command name (first token) and check it against the allowlist.
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return false
+	}
+	cmdName := fields[0]
+	for _, allowed := range cs.config.allowedCommands {
+		if cmdName == strings.TrimSpace(allowed) {
+			return true
+		}
 	}
 
 	return false
