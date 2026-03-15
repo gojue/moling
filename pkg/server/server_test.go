@@ -17,6 +17,8 @@
 package server
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -78,4 +80,87 @@ func TestNewMLServer(t *testing.T) {
 		t.Errorf("Failed to start server: %s", err.Error())
 	}
 	t.Logf("Server started successfully: %v", srv)
+}
+
+// TestSSESecurityMiddleware verifies that sseSecurityMiddleware enforces token
+// authentication and that corsRemoverResponseWriter strips the wildcard CORS header.
+func TestSSESecurityMiddleware(t *testing.T) {
+	const token = "test-secret-token"
+
+	// A stub upstream handler that sets CORS wildcard and writes a body.
+	stub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+
+	handler := sseSecurityMiddleware(token, stub)
+
+	t.Run("no token returns 401", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/sse", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	t.Run("wrong token returns 401", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/sse?token=wrong", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
+	t.Run("valid query param token passes and removes CORS header", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/sse?token="+token, nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "" {
+			t.Errorf("expected CORS header to be removed, got %q", got)
+		}
+	})
+
+	t.Run("valid Bearer token passes and removes CORS header", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/sse", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200, got %d", rr.Code)
+		}
+		if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "" {
+			t.Errorf("expected CORS header to be removed, got %q", got)
+		}
+	})
+}
+
+// TestNewMoLingServerGeneratesToken verifies that a random auth token is
+// generated when ListenAddr is set and no token is provided in the config.
+func TestNewMoLingServerGeneratesToken(t *testing.T) {
+	mlConfig := config.MoLingConfig{
+		BasePath:   filepath.Join(os.TempDir(), "moling_test"),
+		ListenAddr: "127.0.0.1:0",
+	}
+	for _, dirName := range []string{"logs", "config", "browser", "data", "cache"} {
+		_ = utils.CreateDirectory(filepath.Join(mlConfig.BasePath, dirName))
+	}
+	logger, ctx, err := comm.InitTestEnv()
+	if err != nil {
+		t.Fatalf("InitTestEnv: %v", err)
+	}
+	mlConfig.SetLogger(logger)
+
+	srv, err := NewMoLingServer(ctx, []abstract.Service{}, mlConfig)
+	if err != nil {
+		t.Fatalf("NewMoLingServer: %v", err)
+	}
+	if srv.authToken == "" {
+		t.Error("expected a non-empty auth token to be generated")
+	}
 }

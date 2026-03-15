@@ -45,6 +45,7 @@ type MoLingConfig struct {
 	Args        string // Arguments to pass to the command, STDIO mode only, default: empty
 	BaseURL     string // BaseURL , SSE mode only.
 	ServerName  string // ServerName MCP ServerName, add to the MCP Client config
+	AuthToken   string // AuthToken for SSE mode authentication. Auto-generated if empty.
 	logger      zerolog.Logger
 }
 

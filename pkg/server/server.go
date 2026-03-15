@@ -17,8 +17,12 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -38,6 +42,7 @@ type MoLingServer struct {
 	logger     zerolog.Logger
 	mlConfig   config.MoLingConfig
 	listenAddr string // SSE mode listen address, if empty, use STDIO mode.
+	authToken  string // Auth token for SSE mode. Required for all SSE requests.
 }
 
 func NewMoLingServer(ctx context.Context, srvs []abstract.Service, mlConfig config.MoLingConfig) (*MoLingServer, error) {
@@ -48,6 +53,17 @@ func NewMoLingServer(ctx context.Context, srvs []abstract.Service, mlConfig conf
 		server.WithLogging(),
 		server.WithPromptCapabilities(true),
 	)
+
+	// Resolve auth token for SSE mode.  16 random bytes encoded as 32 hex chars.
+	authToken := mlConfig.AuthToken
+	if mlConfig.ListenAddr != "" && authToken == "" {
+		tokenBytes := make([]byte, 16)
+		if _, err := rand.Read(tokenBytes); err != nil {
+			return nil, fmt.Errorf("failed to generate SSE auth token: %w", err)
+		}
+		authToken = hex.EncodeToString(tokenBytes)
+	}
+
 	// Set the context for the server
 	ms := &MoLingServer{
 		ctx:        ctx,
@@ -56,6 +72,7 @@ func NewMoLingServer(ctx context.Context, srvs []abstract.Service, mlConfig conf
 		listenAddr: mlConfig.ListenAddr,
 		logger:     ctx.Value(comm.MoLingLoggerKey).(zerolog.Logger),
 		mlConfig:   mlConfig,
+		authToken:  authToken,
 	}
 	err := ms.init()
 	return ms, err
@@ -101,6 +118,67 @@ func (m *MoLingServer) loadService(srv abstract.Service) error {
 	return nil
 }
 
+// corsRemoverResponseWriter wraps http.ResponseWriter to strip the wildcard
+// Access-Control-Allow-Origin header hardcoded by the upstream mcp-go library,
+// preventing cross-origin browser access to the SSE endpoint.
+type corsRemoverResponseWriter struct {
+	http.ResponseWriter
+	flusher http.Flusher
+	cleaned bool
+}
+
+func newCORSRemoverResponseWriter(w http.ResponseWriter) *corsRemoverResponseWriter {
+	flusher, _ := w.(http.Flusher)
+	return &corsRemoverResponseWriter{
+		ResponseWriter: w,
+		flusher:        flusher,
+	}
+}
+
+func (w *corsRemoverResponseWriter) cleanCORSHeader() {
+	if !w.cleaned {
+		w.ResponseWriter.Header().Del("Access-Control-Allow-Origin")
+		w.cleaned = true
+	}
+}
+
+func (w *corsRemoverResponseWriter) WriteHeader(code int) {
+	w.cleanCORSHeader()
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *corsRemoverResponseWriter) Write(b []byte) (int, error) {
+	w.cleanCORSHeader()
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *corsRemoverResponseWriter) Flush() {
+	if w.flusher != nil {
+		w.flusher.Flush()
+	}
+}
+
+// sseSecurityMiddleware enforces token-based authentication and removes the
+// wildcard CORS header from all responses.  Clients must supply the token either
+// as an Authorization: Bearer <token> header or as a ?token=<token> query
+// parameter.
+func sseSecurityMiddleware(token string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Accept token from Authorization header or query parameter.
+		// Use constant-time comparison to prevent timing attacks.
+		bearerToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		queryToken := r.URL.Query().Get("token")
+		tokenBytes := []byte(token)
+		validBearer := subtle.ConstantTimeCompare([]byte(bearerToken), tokenBytes) == 1
+		validQuery := subtle.ConstantTimeCompare([]byte(queryToken), tokenBytes) == 1
+		if !validBearer && !validQuery {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(newCORSRemoverResponseWriter(w), r)
+	})
+}
+
 func (m *MoLingServer) Serve() error {
 	mLogger := log.New(m.logger, m.mlConfig.ServerName, 0)
 	if m.listenAddr != "" {
@@ -110,7 +188,14 @@ func (m *MoLingServer) Serve() error {
 		m.logger = zerolog.New(multi).With().Timestamp().Logger()
 		m.logger.Info().Str("listenAddr", m.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
 		m.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
-		return server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr)).Start(m.listenAddr)
+		m.logger.Warn().Msgf("SSE auth token: %s", m.authToken)
+		m.logger.Warn().Msgf("SSE server URL with token: %s/sse?token=%s", ltnAddr, m.authToken)
+		sseServer := server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr))
+		httpServer := &http.Server{
+			Addr:    m.listenAddr,
+			Handler: sseSecurityMiddleware(m.authToken, sseServer),
+		}
+		return httpServer.ListenAndServe()
 	}
 	m.logger.Info().Msg("Starting STDIO server")
 	return server.ServeStdio(m.server, server.WithErrorLogger(mLogger))
