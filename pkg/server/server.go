@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -101,6 +102,27 @@ func (m *MoLingServer) loadService(srv abstract.Service) error {
 	return nil
 }
 
+// requireJSONContentType is a middleware that rejects POST requests whose
+// Content-Type is not application/json.  Browsers treat text/plain,
+// application/x-www-form-urlencoded, and multipart/form-data as "simple"
+// requests, meaning no CORS preflight is sent.  Enforcing application/json
+// here ensures that cross-origin requests always go through the preflight
+// check and cannot bypass CORS protection.
+func requireJSONContentType(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			ct := r.Header.Get("Content-Type")
+			// Strip optional parameters (e.g. "; charset=utf-8") before comparing.
+			mediaType := strings.ToLower(strings.TrimSpace(strings.SplitN(ct, ";", 2)[0]))
+			if mediaType != "application/json" {
+				http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (m *MoLingServer) Serve() error {
 	mLogger := log.New(m.logger, m.mlConfig.ServerName, 0)
 	if m.listenAddr != "" {
@@ -110,7 +132,10 @@ func (m *MoLingServer) Serve() error {
 		m.logger = zerolog.New(multi).With().Timestamp().Logger()
 		m.logger.Info().Str("listenAddr", m.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
 		m.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
-		return server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr)).Start(m.listenAddr)
+		httpSrv := &http.Server{Addr: m.listenAddr}
+		sseServer := server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr), server.WithHTTPServer(httpSrv))
+		httpSrv.Handler = requireJSONContentType(sseServer)
+		return sseServer.Start(m.listenAddr)
 	}
 	m.logger.Info().Msg("Starting STDIO server")
 	return server.ServeStdio(m.server, server.WithErrorLogger(mLogger))
