@@ -69,8 +69,8 @@ func TestHoverSelectorEscaping(t *testing.T) {
 			wantJSPrefix: `document.querySelector("body'),document.title='PWNED',document.querySelector('body").dispatchEvent`,
 		},
 		{
-			name:     "injection attempt with semicolons and IIFE",
-			selector: "body'); (function(){ /* exfiltration */ })(); document.querySelector('body",
+			name:         "injection attempt with semicolons and IIFE",
+			selector:     "body'); (function(){ /* exfiltration */ })(); document.querySelector('body",
 			wantJSPrefix: `document.querySelector("body'); (function(){ /* exfiltration */ })(); document.querySelector('body").dispatchEvent`,
 		},
 		{
