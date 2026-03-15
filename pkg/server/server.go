@@ -219,6 +219,7 @@ func (m *MoLingServer) Serve() error {
 		httpSrv := &http.Server{Addr: m.listenAddr}
 		sseServer := server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr), server.WithHTTPServer(httpSrv))
 		httpSrv.Handler = sseSecurityMiddleware(m.authToken, requireJSONContentType(sseServer))
+
 		return sseServer.Start(m.listenAddr)
 	}
 	m.logger.Info().Msg("Starting STDIO server")

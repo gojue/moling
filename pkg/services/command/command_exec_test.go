@@ -91,6 +91,71 @@ func TestAllowCmd(t *testing.T) {
 	t.Log("Command is allowed:", cmd)
 }
 
+// TestIsAllowedCommandInjection verifies that shell injection attempts are blocked.
+func TestIsAllowedCommandInjection(t *testing.T) {
+	_, ctx, err := comm.InitTestEnv()
+	if err != nil {
+		t.Fatalf("Failed to initialize test environment: %v", err)
+	}
+
+	cs, err := NewCommandServer(ctx)
+	if err != nil {
+		t.Fatalf("Failed to create CommandServer: %v", err)
+	}
+
+	cc := StructToMap(NewCommandConfig())
+	err = cs.LoadConfig(cc)
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+	cs1 := cs.(*CommandServer)
+
+	injectionAttempts := []struct {
+		name    string
+		command string
+	}{
+		{"semicolon injection", "echo hello; id"},
+		{"semicolon with spaces", "echo hello ; whoami"},
+		{"command substitution $()", "echo $(id)"},
+		{"command substitution with cat", "echo $(cat /etc/passwd)"},
+		{"backtick substitution", "echo `whoami`"},
+		{"backtick substitution nested", "echo `id`"},
+		{"newline injection", "echo hello\nid"},
+		{"variable expansion ${}", "echo ${PATH}"},
+		{"semicolon with allowed cmd", "ls; id"},
+		{"semicolon chaining", "echo x; echo y; id"},
+	}
+
+	for _, tc := range injectionAttempts {
+		t.Run(tc.name, func(t *testing.T) {
+			if cs1.isAllowedCommand(tc.command) {
+				t.Errorf("injection attempt should be blocked: %q", tc.command)
+			}
+		})
+	}
+
+	// Verify legitimate commands still work.
+	legitimateCmds := []struct {
+		name    string
+		command string
+	}{
+		{"simple echo", "echo hello"},
+		{"ls with flag", "ls -la"},
+		{"pipe allowed cmds", "cat /etc/hostname | grep -v localhost"},
+		{"logical AND allowed cmds", "echo hello && echo world"},
+		{"logical OR allowed cmds", "echo hello || echo world"},
+		{"git command", "git log --oneline"},
+	}
+
+	for _, tc := range legitimateCmds {
+		t.Run(tc.name, func(t *testing.T) {
+			if !cs1.isAllowedCommand(tc.command) {
+				t.Errorf("legitimate command should be allowed: %q", tc.command)
+			}
+		})
+	}
+}
+
 // 将 struct 转换为 map
 func StructToMap(obj any) map[string]any {
 	result := make(map[string]any)
