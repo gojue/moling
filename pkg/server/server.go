@@ -118,6 +118,27 @@ func (m *MoLingServer) loadService(srv abstract.Service) error {
 	return nil
 }
 
+// requireJSONContentType is a middleware that rejects POST requests whose
+// Content-Type is not application/json.  Browsers treat text/plain,
+// application/x-www-form-urlencoded, and multipart/form-data as "simple"
+// requests, meaning no CORS preflight is sent.  Enforcing application/json
+// here ensures that cross-origin requests always go through the preflight
+// check and cannot bypass CORS protection.
+func requireJSONContentType(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			ct := r.Header.Get("Content-Type")
+			// Strip optional parameters (e.g. "; charset=utf-8") before comparing.
+			mediaType := strings.ToLower(strings.TrimSpace(strings.SplitN(ct, ";", 2)[0]))
+			if mediaType != "application/json" {
+				http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // corsRemoverResponseWriter wraps http.ResponseWriter to strip the wildcard
 // Access-Control-Allow-Origin header hardcoded by the upstream mcp-go library,
 // preventing cross-origin browser access to the SSE endpoint.
@@ -164,9 +185,12 @@ func (w *corsRemoverResponseWriter) Flush() {
 // parameter.
 func sseSecurityMiddleware(token string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Accept token from Authorization header or query parameter.
+		// Accept token from Authorization header (Bearer scheme only) or query parameter.
 		// Use constant-time comparison to prevent timing attacks.
-		bearerToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		var bearerToken string
+		if authHeader := r.Header.Get("Authorization"); strings.HasPrefix(authHeader, "Bearer ") {
+			bearerToken = authHeader[len("Bearer "):]
+		}
 		queryToken := r.URL.Query().Get("token")
 		tokenBytes := []byte(token)
 		validBearer := subtle.ConstantTimeCompare([]byte(bearerToken), tokenBytes) == 1
@@ -188,14 +212,14 @@ func (m *MoLingServer) Serve() error {
 		m.logger = zerolog.New(multi).With().Timestamp().Logger()
 		m.logger.Info().Str("listenAddr", m.listenAddr).Str("BaseURL", ltnAddr).Msg("Starting SSE server")
 		m.logger.Warn().Msgf("The SSE server URL must be: %s. Please do not make mistakes, even if it is another IP or domain name on the same computer, it cannot be mixed.", ltnAddr)
-		m.logger.Warn().Msgf("SSE auth token: %s", m.authToken)
-		m.logger.Warn().Msgf("SSE server URL with token: %s/sse?token=%s", ltnAddr, m.authToken)
-		sseServer := server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr))
-		httpServer := &http.Server{
-			Addr:    m.listenAddr,
-			Handler: sseSecurityMiddleware(m.authToken, sseServer),
-		}
-		return httpServer.ListenAndServe()
+		// Print auth token to stdout only — avoid persisting credentials to log file.
+		stdoutLogger := zerolog.New(consoleWriter).With().Timestamp().Logger()
+		stdoutLogger.Warn().Msgf("SSE auth token: %s", m.authToken)
+		stdoutLogger.Warn().Msgf("SSE server URL with token: %s/sse?token=%s", ltnAddr, m.authToken)
+		httpSrv := &http.Server{Addr: m.listenAddr}
+		sseServer := server.NewSSEServer(m.server, server.WithBaseURL(ltnAddr), server.WithHTTPServer(httpSrv))
+		httpSrv.Handler = sseSecurityMiddleware(m.authToken, requireJSONContentType(sseServer))
+		return sseServer.Start(m.listenAddr)
 	}
 	m.logger.Info().Msg("Starting STDIO server")
 	return server.ServeStdio(m.server, server.WithErrorLogger(mLogger))

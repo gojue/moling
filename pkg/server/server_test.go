@@ -114,6 +114,16 @@ func TestSSESecurityMiddleware(t *testing.T) {
 		}
 	})
 
+	t.Run("raw token in Authorization header without Bearer scheme returns 401", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/sse", nil)
+		req.Header.Set("Authorization", token) // missing "Bearer " prefix
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("expected 401, got %d", rr.Code)
+		}
+	})
+
 	t.Run("valid query param token passes and removes CORS header", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/sse?token="+token, nil)
 		rr := httptest.NewRecorder()
@@ -138,6 +148,52 @@ func TestSSESecurityMiddleware(t *testing.T) {
 			t.Errorf("expected CORS header to be removed, got %q", got)
 		}
 	})
+}
+
+// TestRequireJSONContentType verifies that the middleware blocks POST requests
+// with non-application/json Content-Types (which browsers treat as "simple
+// requests" and therefore never trigger a CORS preflight).
+func TestRequireJSONContentType(t *testing.T) {
+	// A simple downstream handler that always returns 200.
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := requireJSONContentType(ok)
+
+	tests := []struct {
+		name           string
+		method         string
+		contentType    string
+		expectedStatus int
+	}{
+		// Non-POST requests must pass through regardless of Content-Type.
+		{"GET no CT", http.MethodGet, "", http.StatusOK},
+		{"GET text/plain", http.MethodGet, "text/plain", http.StatusOK},
+		// POST with application/json (with and without charset param) must pass.
+		{"POST application/json", http.MethodPost, "application/json", http.StatusOK},
+		{"POST application/json; charset=utf-8", http.MethodPost, "application/json; charset=utf-8", http.StatusOK},
+		// POST with "simple" Content-Types that bypass CORS preflight must be rejected.
+		{"POST text/plain", http.MethodPost, "text/plain", http.StatusUnsupportedMediaType},
+		{"POST application/x-www-form-urlencoded", http.MethodPost, "application/x-www-form-urlencoded", http.StatusUnsupportedMediaType},
+		{"POST multipart/form-data", http.MethodPost, "multipart/form-data", http.StatusUnsupportedMediaType},
+		// POST with empty or missing Content-Type must also be rejected.
+		{"POST no CT", http.MethodPost, "", http.StatusUnsupportedMediaType},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, "/message", nil)
+			if tc.contentType != "" {
+				req.Header.Set("Content-Type", tc.contentType)
+			}
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+			if rr.Code != tc.expectedStatus {
+				t.Errorf("expected status %d, got %d", tc.expectedStatus, rr.Code)
+			}
+		})
+	}
 }
 
 // TestNewMoLingServerGeneratesToken verifies that a random auth token is
