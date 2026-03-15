@@ -150,7 +150,6 @@ func TestSSESecurityMiddleware(t *testing.T) {
 	})
 }
 
-
 // TestRequireJSONContentType verifies that the middleware blocks POST requests
 // with non-application/json Content-Types (which browsers treat as "simple
 // requests" and therefore never trigger a CORS preflight).
