@@ -17,6 +17,8 @@
 package browser
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/gojue/moling/pkg/comm"
@@ -41,5 +43,61 @@ func TestBrowserServer(t *testing.T) {
 	_, err = NewBrowserServer(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create BrowserServer: %s", err.Error())
+	}
+}
+
+// TestHoverSelectorEscaping verifies that the selector is safely JSON-encoded
+// before being embedded in the JavaScript expression, preventing code injection.
+func TestHoverSelectorEscaping(t *testing.T) {
+	tests := []struct {
+		name     string
+		selector string
+		// wantPrefix checks that the selector is embedded as a JSON-encoded double-quoted string
+		wantJSPrefix string
+		wantJSSuffix string
+	}{
+		{
+			name:         "normal selector",
+			selector:     "body",
+			wantJSPrefix: `document.querySelector("body").dispatchEvent`,
+		},
+		{
+			name:     "injection attempt with single quotes and comma operator",
+			selector: "body'),document.title='PWNED',document.querySelector('body",
+			// After JSON encoding, the selector is a double-quoted string literal.
+			// The single quotes and commas stay inside the string and are NOT executable.
+			wantJSPrefix: `document.querySelector("body'),document.title='PWNED',document.querySelector('body").dispatchEvent`,
+		},
+		{
+			name:         "injection attempt with semicolons and IIFE",
+			selector:     "body'); (function(){ /* exfiltration */ })(); document.querySelector('body",
+			wantJSPrefix: `document.querySelector("body'); (function(){ /* exfiltration */ })(); document.querySelector('body").dispatchEvent`,
+		},
+		{
+			name:     "selector with double quotes is escaped by JSON",
+			selector: `div[data-id="foo"]`,
+			// json.Marshal escapes inner double quotes as \", so they cannot break out of the JS string.
+			wantJSPrefix: `document.querySelector("div[data-id=\"foo\"]").dispatchEvent`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			selectorJSON, err := json.Marshal(tc.selector)
+			if err != nil {
+				t.Fatalf("json.Marshal failed: %v", err)
+			}
+			js := `document.querySelector(` + string(selectorJSON) + `).dispatchEvent(new Event('mouseover'))`
+
+			// The embedded selector must be wrapped in JSON double-quotes (not single-quotes).
+			// This ensures injected single-quote characters cannot break out of the JS string context.
+			if !strings.HasPrefix(string(selectorJSON), `"`) || !strings.HasSuffix(string(selectorJSON), `"`) {
+				t.Errorf("selector was not JSON-encoded as a double-quoted string: %s", string(selectorJSON))
+			}
+
+			if tc.wantJSPrefix != "" && !strings.HasPrefix(js, tc.wantJSPrefix) {
+				t.Errorf("JS expression did not start with expected prefix\n  want: %s\n   got: %s", tc.wantJSPrefix, js)
+			}
+		})
 	}
 }

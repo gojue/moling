@@ -458,7 +458,12 @@ func (bs *BrowserServer) handleHover(ctx context.Context, request mcp.CallToolRe
 	var res bool
 	runCtx, cancelFunc := context.WithTimeout(bs.Context, time.Duration(bs.config.SelectorQueryTimeout)*time.Second)
 	defer cancelFunc()
-	err := chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector('`+selector+`').dispatchEvent(new Event('mouseover'))`, &res))
+	// Use json.Marshal to safely embed the selector in JS, preventing code injection.
+	selectorJSON, err := json.Marshal(selector)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("invalid selector: %s", err.Error())), nil
+	}
+	err = chromedp.Run(runCtx, chromedp.Evaluate(`document.querySelector(`+string(selectorJSON)+`).dispatchEvent(new Event('mouseover'))`, &res))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Errorf("failed to hover over element: %s", err.Error()).Error()), nil
 	}
